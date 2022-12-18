@@ -1,9 +1,9 @@
+use std::collections::{HashMap, VecDeque};
+
 use anyhow::{Context, Result};
 use itertools::Itertools;
 use rayon::prelude::*;
 use regex::Regex;
-use std::collections::{HashMap, VecDeque};
-use std::io::{stdin, Read};
 
 #[derive(Eq, PartialEq, Debug)]
 struct Problem {
@@ -224,8 +224,9 @@ fn search_2(problem: &Problem) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{parse, search};
     use itertools::Itertools;
+
+    use crate::{parse, search};
 
     const EXAMPLE: &str = "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
 Valve BB has flow rate=13; tunnels lead to valves CC, AA
@@ -271,8 +272,7 @@ Valve JJ has flow rate=21; tunnel leads to valve II
 }
 
 fn main() -> Result<()> {
-    let mut buf = String::new();
-    stdin().read_to_string(&mut buf)?;
+    let buf = aoc::io::read_stdin()?;
     let problem = parse(buf.as_str())?;
     let cost = search(&problem, 30);
     println!("{cost}");
