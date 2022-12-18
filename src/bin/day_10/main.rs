@@ -165,8 +165,14 @@ fn parse_instruction(instr: &str) -> Instruction {
     let first = parts.next().expect("Empty instruction");
     match first {
         "noop" => Instruction::Noop(),
-        "addx" => Instruction::Add(parts.next().and_then(| arg | arg.parse().ok()).expect("Missing operand"), 2),
-        _ => panic!("Wrong instruction: {}", first)
+        "addx" => Instruction::Add(
+            parts
+                .next()
+                .and_then(|arg| arg.parse().ok())
+                .expect("Missing operand"),
+            2,
+        ),
+        _ => panic!("Wrong instruction: {}", first),
     }
 }
 
@@ -175,22 +181,26 @@ fn parse_instruction(instr: &str) -> Instruction {
 fn test_parse_program() {
     let lines: Vec<Instruction> = SMALL_EXAMPLE
         .lines()
-        .filter(| l| !l.is_empty())
-        .map(parse_instruction).collect();
+        .filter(|l| !l.is_empty())
+        .map(parse_instruction)
+        .collect();
 }
 
 fn parse_instructions<'a, I: Iterator<Item = &'a str> + 'a>(it: I) -> Program<'a> {
-    let out = it
-        .filter(| l: &&str | !l.is_empty())
-        .map(parse_instruction);
-    Program { source: Box::new(out), register: 1, op: None, started: false }
+    let out = it.filter(|l: &&str| !l.is_empty()).map(parse_instruction);
+    Program {
+        source: Box::new(out),
+        register: 1,
+        op: None,
+        started: false,
+    }
 }
 
 struct Program<'a> {
     source: Box<dyn Iterator<Item = Instruction> + 'a>,
     register: i32,
     op: Option<Instruction>,
-    started: bool
+    started: bool,
 }
 
 impl Iterator for Program<'_> {
@@ -205,7 +215,7 @@ impl Iterator for Program<'_> {
                 None | Some(Instruction::Noop()) => {
                     self.op = self.source.next();
                     Some(self.register)
-                },
+                }
                 Some(Instruction::Add(count, cycles_remaining)) => {
                     if cycles_remaining == 1 {
                         self.op = self.source.next();
@@ -217,7 +227,6 @@ impl Iterator for Program<'_> {
                 }
             }
         }
-
     }
 }
 
@@ -237,15 +246,18 @@ fn test_small_example() {
 #[cfg(test)]
 #[test]
 fn test_large_example() {
-    let mut prog = parse_instructions(LARGE_EXAMPLE.lines());
+    let prog = parse_instructions(LARGE_EXAMPLE.lines());
     let cycles_read = vec![20, 60, 100, 140, 180, 220];
     let mut sum = 0;
 
     for (index, register) in prog.enumerate() {
         let cycle: i32 = (index + 1) as i32;
         if cycles_read.contains(&cycle) {
-            println!("cycle: {} register: {} signal: {}",
-                cycle, register, cycle * register
+            println!(
+                "cycle: {} register: {} signal: {}",
+                cycle,
+                register,
+                cycle * register
             );
             sum += cycle * register;
         }
@@ -255,7 +267,10 @@ fn test_large_example() {
 }
 
 fn main() {
-    let code_lines: Vec<String> = stdin().lines().map(| line | line.expect("IO Error")).collect();
+    let code_lines: Vec<String> = stdin()
+        .lines()
+        .map(|line| line.expect("IO Error"))
+        .collect();
     let code = code_lines.join("\n");
     let prog = parse_instructions(code.as_str().lines());
     let cycles_read = vec![20, 60, 100, 140, 180, 220];
@@ -268,7 +283,7 @@ fn main() {
             sum += cycle * register;
         }
         let visible: bool = ((display.len() as i32) - register).abs() <= 1;
-        display.push(if visible { "#"} else { " "} );
+        display.push(if visible { "#" } else { " " });
         if display.len() == 40 {
             println!("{}", display.join(""));
             display.clear();
