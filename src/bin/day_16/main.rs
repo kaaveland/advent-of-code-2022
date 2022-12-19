@@ -103,13 +103,6 @@ fn search(problem: &Problem, max_cost: u32) -> u32 {
             continue;
         }
         let flow = problem.flow_rate[loc];
-        stack.push(State {
-            loc,
-            cost,
-            flow: 0,
-            released: 0,
-            opened: 0,
-        });
         if flow > 0 {
             stack.push(State {
                 loc,
@@ -131,31 +124,20 @@ fn search(problem: &Problem, max_cost: u32) -> u32 {
     while !stack.is_empty() {
         let mut pushed = false;
         let state = stack.pop().unwrap();
-        let flow_here = problem.flow_rate[state.loc];
-        let is_open = state.opened & (1 << (state.loc + 1)) > 0;
-        if flow_here > 0 && !is_open && state.cost < max_cost + 1 {
-            stack.push(State {
-                loc: state.loc,
-                cost: state.cost + 1,
-                flow: state.flow + flow_here,
-                released: state.released + state.flow,
-                opened: state.opened | (1 << (state.loc + 1)),
-            });
-            pushed = true;
-        }
 
         if state.cost < max_cost {
             let remaining = max_cost - state.cost;
             for vtx in problem.vtx_with_flow.iter() {
                 let cost = problem.costs[state.loc][*vtx];
+                let flow = problem.flow_rate[*vtx];
                 let is_open = state.opened & (1 << (vtx + 1)) > 0;
                 if *vtx != state.loc && cost + 1 < remaining && !is_open {
                     stack.push(State {
                         loc: *vtx,
-                        cost: cost + state.cost,
-                        flow: state.flow,
-                        released: state.released + cost * state.flow,
-                        opened: state.opened,
+                        cost: cost + state.cost + 1,
+                        flow: state.flow + flow,
+                        released: state.released + (1 + cost) * state.flow,
+                        opened: state.opened | (1 << (*vtx + 1)),
                     });
                     pushed = true;
                 }
