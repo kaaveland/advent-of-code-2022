@@ -2,6 +2,7 @@ use anyhow::Result;
 use aoc::io::read_stdin;
 use itertools::Itertools;
 use std::cmp::max;
+use std::collections::HashMap;
 
 type Shape = Vec<(i64, i64)>;
 
@@ -37,7 +38,7 @@ fn parse_jets(input: &str) -> Jets {
 }
 
 const CHAMBER_WIDTH: i64 = 7;
-const MAX_HEIGHT: usize = 10000;
+const MAX_HEIGHT: usize = 100000;
 
 fn in_bounds(shape: &Shape) -> bool {
     shape
@@ -53,7 +54,6 @@ fn drop_rock(
     grid: &mut [Vec<bool>],
 ) -> (usize, [i64; CHAMBER_WIDTH as usize]) {
     let height = max_heights.iter().max().unwrap();
-    //  bottom left
     let mut shape = shape.clone();
     let y_low = shape.iter().map(|&(_, y)| y).min().unwrap();
     shift(&mut shape, (2, height + 3 + y_low.abs()));
@@ -102,18 +102,47 @@ fn drop_rock(
     (time, max_height_out)
 }
 
+type CacheKey = ([i64; CHAMBER_WIDTH as usize], usize, usize);
+type CacheValue = (usize, i64);
+
 fn drop_many_rocks(jets: &Jets, rocks_to_drop: usize) -> i64 {
     let shapes = shapes();
     let mut grid = vec![vec![false; CHAMBER_WIDTH as usize]; MAX_HEIGHT];
     let mut max_heights = [0; CHAMBER_WIDTH as usize];
     let mut time = 0;
-    for rock_number in 0..rocks_to_drop {
+    let mut rock_number = 0;
+    let mut cycled_altitude = 0;
+    let mut cache: HashMap<CacheKey, CacheValue> = HashMap::new();
+
+    while rock_number < rocks_to_drop {
         let shape = &shapes[rock_number % shapes.len()];
         (time, max_heights) = drop_rock(jets, shape, time, &max_heights, &mut grid);
-        println!("{max_heights:?} {time}");
+        let smallest_height = *max_heights.iter().min().unwrap();
+        let largest_height = *max_heights.iter().max().unwrap();
+        let top_shape: [i64; CHAMBER_WIDTH as usize] = max_heights
+            .iter()
+            .map(|&h| h - smallest_height)
+            .collect::<Vec<i64>>()
+            .try_into()
+            .unwrap();
+        let cache_key = (top_shape, rock_number % shapes.len(), time % jets.len());
+
+        if let Some(&(old_index, old_height)) = cache.get(&cache_key) {
+            if cycled_altitude == 0 {
+                let cycle_length = rock_number - old_index;
+                let cycle_height = largest_height - old_height;
+                let cycles_to_skip = (rocks_to_drop - old_index) / cycle_length - 1;
+                rock_number += cycles_to_skip * cycle_length;
+                cycled_altitude += (cycles_to_skip as i64) * cycle_height;
+            }
+        } else {
+            cache.insert(cache_key, (rock_number, largest_height));
+        }
+
+        rock_number += 1;
     }
 
-    *max_heights.iter().max().unwrap()
+    *max_heights.iter().max().unwrap() + cycled_altitude
 }
 
 #[cfg(test)]
@@ -134,11 +163,20 @@ pub mod tests {
         let answer = drop_many_rocks(&jets, 2022);
         assert_eq!(answer, 3068);
     }
+
+    #[test]
+    fn test_drop_supermany_rocks() {
+        let jets = super::parse_jets(EXAMPLE);
+        let answer = drop_many_rocks(&jets, 1000000000000);
+        assert_eq!(answer, 1514285714288);
+    }
 }
 fn main() -> Result<()> {
     let inp = read_stdin()?;
     let jets = parse_jets(inp.as_str());
     let max_height = drop_many_rocks(&jets, 2022);
+    println!("{max_height}");
+    let max_height = drop_many_rocks(&jets, 1000000000000);
     println!("{max_height}");
     Ok(())
 }
