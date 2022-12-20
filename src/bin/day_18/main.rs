@@ -43,7 +43,6 @@ fn parse_droplet(inp: &str) -> HashSet<(i32, i32, i32)> {
 
 fn exposed_surface(droplet: &HashSet<(i32, i32, i32)>) -> usize {
     let mut visited = HashSet::new();
-    let mut observed = HashSet::new();
     let mut queue = VecDeque::new();
 
     let xmin = droplet.iter().map(|&(x, _, _)| x).min().unwrap() - 1;
@@ -60,16 +59,7 @@ fn exposed_surface(droplet: &HashSet<(i32, i32, i32)>) -> usize {
     // Use BFS to visit the entire perimeter
     while !queue.is_empty() {
         let current = queue.pop_front().unwrap();
-        if visited.contains(&current) || droplet.contains(&current) {
-            continue;
-        }
         visited.insert(current);
-
-        for next in face_sides(&current) {
-            if droplet.contains(&next) {
-                observed.insert(next);
-            }
-        }
 
         for next in face_sides(&current) {
             if !visited.contains(&next)
@@ -88,7 +78,6 @@ fn exposed_surface(droplet: &HashSet<(i32, i32, i32)>) -> usize {
 
     droplet
         .iter()
-        .filter(|cube| observed.contains(cube))
         .map(|cube| {
             face_sides(cube)
                 .iter()

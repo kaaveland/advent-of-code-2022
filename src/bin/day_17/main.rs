@@ -15,6 +15,7 @@ fn shapes() -> Vec<Shape> {
         vec![(0, 0), (0, -1), (1, 0), (1, -1)],           // square
     ]
 }
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum Jet {
     Left,
