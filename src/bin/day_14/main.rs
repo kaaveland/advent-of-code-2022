@@ -1,10 +1,13 @@
 use std::collections::HashMap;
-use std::io::{Read, stdin};
+use std::io::{stdin, Read};
 
 use anyhow::{Context, Result};
 
 #[derive(Eq, PartialEq, Hash, Debug, Copy, Clone)]
-struct Vertex { x: i32, y: i32 }
+struct Vertex {
+    x: i32,
+    y: i32,
+}
 
 type Wall = Vec<Vertex>;
 
@@ -23,21 +26,21 @@ fn parse_vertices(line: &str) -> Result<Wall> {
 
 #[derive(Clone, Debug, PartialEq, Eq, Copy)]
 pub enum Tile {
-    Air, Rock, Sand
+    Air,
+    Rock,
+    Sand,
 }
 
 type Map = HashMap<Vertex, Tile>;
 
 fn new_map() -> Map {
     let mut out = Map::new();
-    out.insert(Vertex { x: 500, y: 0}, Tile::Air);
+    out.insert(Vertex { x: 500, y: 0 }, Tile::Air);
     out
 }
 
-fn fill_map(
-    map: &mut Map, from: &Vertex, to: &Vertex, tile: Tile
-) {
-    use std::cmp::Ordering::{Greater, Equal, Less};
+fn fill_map(map: &mut Map, from: &Vertex, to: &Vertex, tile: Tile) {
+    use std::cmp::Ordering::{Equal, Greater, Less};
 
     let xdiff = match from.x.cmp(&to.x) {
         Equal => 0,
@@ -47,7 +50,7 @@ fn fill_map(
     let ydiff = match from.y.cmp(&to.y) {
         Equal => 0,
         Greater => -1,
-        Less => 1
+        Less => 1,
     };
 
     let mut xy = (from.x, from.y);
@@ -64,9 +67,7 @@ fn bounds_of(map: &Map) -> Result<((i32, i32), (i32, i32))> {
 
     for &vertex in map.keys() {
         match xbounds {
-            None => {
-                xbounds = Some((vertex.x, vertex.x))
-            }
+            None => xbounds = Some((vertex.x, vertex.x)),
             Some((xmin, xmax)) if vertex.x < xmin => {
                 xbounds = Some((vertex.x, xmax));
             }
@@ -76,9 +77,7 @@ fn bounds_of(map: &Map) -> Result<((i32, i32), (i32, i32))> {
             _ => {}
         }
         match ybounds {
-            None => {
-                ybounds = Some((vertex.y, vertex.y))
-            }
+            None => ybounds = Some((vertex.y, vertex.y)),
             Some((ymin, ymax)) if vertex.y < ymin => {
                 ybounds = Some((vertex.y, ymax));
             }
@@ -109,7 +108,9 @@ fn out_of_bounds(vtx: &Vertex, bounds: &((i32, i32), (i32, i32))) -> bool {
 }
 #[derive(Debug, PartialEq, Eq)]
 enum Placed {
-    Void, Occupied, Location(Vertex)
+    Void,
+    Occupied,
+    Location(Vertex),
 }
 
 fn occupied(map: &Map, vtx: &Vertex) -> bool {
@@ -117,9 +118,18 @@ fn occupied(map: &Map, vtx: &Vertex) -> bool {
 }
 
 fn sandfall(map: &Map, bounds: &((i32, i32), (i32, i32)), origin: &Vertex) -> Placed {
-    let down = Vertex { x: origin.x, y: origin.y + 1};
-    let down_right = Vertex { x: origin.x + 1, y: origin.y + 1 };
-    let down_left = Vertex { x: origin.x - 1, y: origin.y + 1 };
+    let down = Vertex {
+        x: origin.x,
+        y: origin.y + 1,
+    };
+    let down_right = Vertex {
+        x: origin.x + 1,
+        y: origin.y + 1,
+    };
+    let down_left = Vertex {
+        x: origin.x - 1,
+        y: origin.y + 1,
+    };
     // We placed it in the void
     let result = if out_of_bounds(origin, bounds) {
         Placed::Void
@@ -141,21 +151,28 @@ fn sandfall(map: &Map, bounds: &((i32, i32), (i32, i32)), origin: &Vertex) -> Pl
 
     match result {
         Placed::Void => Placed::Void,
-        Placed::Occupied if !occupied(map, origin) => {
-            Placed::Location(*origin)
-        },
-        r => r
+        Placed::Occupied if !occupied(map, origin) => Placed::Location(*origin),
+        r => r,
     }
 }
 
 fn sandfall_p2(map: &Map, bounds: &(i32, i32), origin: &Vertex) -> Placed {
-    let down = Vertex { x: origin.x, y: origin.y + 1};
-    let down_right = Vertex { x: origin.x + 1, y: origin.y + 1 };
-    let down_left = Vertex { x: origin.x - 1, y: origin.y + 1 };
+    let down = Vertex {
+        x: origin.x,
+        y: origin.y + 1,
+    };
+    let down_right = Vertex {
+        x: origin.x + 1,
+        y: origin.y + 1,
+    };
+    let down_left = Vertex {
+        x: origin.x - 1,
+        y: origin.y + 1,
+    };
 
     let result = if origin.y < bounds.0 || origin.y > bounds.1 {
         Placed::Occupied
-    }  else {
+    } else {
         if occupied(map, &down) {
             if occupied(map, &down_left) {
                 if occupied(map, &down_right) {
@@ -172,22 +189,28 @@ fn sandfall_p2(map: &Map, bounds: &(i32, i32), origin: &Vertex) -> Placed {
     };
 
     match result {
-        Placed::Void if !occupied(map, origin) => { Placed::Location(*origin) }
-        Placed::Occupied if !occupied(map, origin) => {
-            Placed::Location(*origin)
-        },
-        r => r
+        Placed::Void if !occupied(map, origin) => Placed::Location(*origin),
+        Placed::Occupied if !occupied(map, origin) => Placed::Location(*origin),
+        r => r,
     }
-}
-
-fn parse_walls(inp: &str) -> Result<Vec<Wall>> {
-    inp.lines().map(parse_vertices).collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{bounds_of, fill_wall, new_map, parse_vertices, parse_walls, sandfall, sandfall_p2, Tile, Vertex};
+    use crate::bounds_of;
+    use crate::fill_wall;
+    use crate::new_map;
+    use crate::sandfall;
+    use crate::sandfall_p2;
     use crate::Placed::Location;
+    use crate::Tile;
+    use crate::Vertex;
+    use crate::{parse_vertices, Wall};
+    use anyhow::Result;
+
+    fn parse_walls(inp: &str) -> Result<Vec<Wall>> {
+        inp.lines().map(parse_vertices).collect()
+    }
 
     const EXAMPLE: &str = "498,4 -> 498,6 -> 496,6
 503,4 -> 502,4 -> 502,9 -> 494,9
@@ -197,13 +220,24 @@ mod tests {
     fn test_parse_vertices() {
         let mut lines = EXAMPLE.lines();
         let line_1 = lines.next().unwrap();
-        assert_eq!(parse_vertices(line_1).unwrap(), vec![
-            Vertex { x: 498, y: 4 }, Vertex { x: 498, y: 6 }, Vertex { x: 496, y: 6}
-        ]);
+        assert_eq!(
+            parse_vertices(line_1).unwrap(),
+            vec![
+                Vertex { x: 498, y: 4 },
+                Vertex { x: 498, y: 6 },
+                Vertex { x: 496, y: 6 }
+            ]
+        );
         let line_2 = lines.next().unwrap();
-        assert_eq!(parse_vertices(line_2).unwrap(), vec![
-            Vertex { x: 503, y: 4}, Vertex { x: 502, y: 4}, Vertex { x: 502, y: 9 }, Vertex { x: 494, y: 9 }
-        ]);
+        assert_eq!(
+            parse_vertices(line_2).unwrap(),
+            vec![
+                Vertex { x: 503, y: 4 },
+                Vertex { x: 502, y: 4 },
+                Vertex { x: 502, y: 9 },
+                Vertex { x: 494, y: 9 }
+            ]
+        );
     }
 
     #[test]
@@ -230,22 +264,16 @@ mod tests {
             fill_wall(&mut map, &wall);
         }
         let bounds = bounds_of(&map).unwrap();
-        let first_sandfall = sandfall(
-            &map, &bounds, &Vertex { x: 500, y: 0 }
-        );
-        assert_eq!(
-            first_sandfall, Location(Vertex { x: 500, y: 8 })
-        );
+        let first_sandfall = sandfall(&map, &bounds, &Vertex { x: 500, y: 0 });
+        assert_eq!(first_sandfall, Location(Vertex { x: 500, y: 8 }));
         match first_sandfall {
-            Location(sand) => { map.insert(sand, Tile::Sand); }
-            _ => panic!("Should place first sand")
+            Location(sand) => {
+                map.insert(sand, Tile::Sand);
+            }
+            _ => panic!("Should place first sand"),
         }
-        let second_sandfall = sandfall(
-            &mut map, &bounds, &Vertex { x: 500, y: 0 }
-        );
-        assert_eq!(
-            second_sandfall, Location(Vertex { x: 499, y: 8})
-        );
+        let second_sandfall = sandfall(&mut map, &bounds, &Vertex { x: 500, y: 0 });
+        assert_eq!(second_sandfall, Location(Vertex { x: 499, y: 8 }));
     }
 
     #[test]
@@ -257,7 +285,7 @@ mod tests {
         }
         let bounds = bounds_of(&map).unwrap();
         let mut placed = 0;
-        while let Location(sand) = sandfall(&mut map, &bounds, &Vertex {x: 500, y: 0}) {
+        while let Location(sand) = sandfall(&mut map, &bounds, &Vertex { x: 500, y: 0 }) {
             map.insert(sand, Tile::Sand);
             placed += 1;
         }
@@ -274,13 +302,12 @@ mod tests {
         let ((xmin, xmax), (ymin, ymax)) = bounds_of(&map).unwrap();
         let bounds = ((xmin, xmax), (ymin, ymax));
         let mut placed = 0;
-        while let Location(sand) = sandfall_p2(&mut map, &bounds.1, &Vertex {x: 500, y: 0}) {
+        while let Location(sand) = sandfall_p2(&mut map, &bounds.1, &Vertex { x: 500, y: 0 }) {
             map.insert(sand, Tile::Sand);
             placed += 1;
         }
         assert_eq!(placed, 93);
     }
-
 }
 
 fn main() -> Result<()> {
@@ -294,7 +321,7 @@ fn main() -> Result<()> {
     let bounds = bounds_of(&map)?;
 
     let mut placed = 0;
-    while let Placed::Location(sand) = sandfall(&mut map, &bounds, &Vertex {x: 500, y: 0}) {
+    while let Placed::Location(sand) = sandfall(&mut map, &bounds, &Vertex { x: 500, y: 0 }) {
         map.insert(sand, Tile::Sand);
         placed += 1;
     }
@@ -308,7 +335,7 @@ fn main() -> Result<()> {
     }
     let bounds = bounds_of(&map)?;
     let mut placed = 0;
-    while let Placed::Location(sand) = sandfall_p2(&mut map, &bounds.1, &Vertex {x: 500, y: 0}) {
+    while let Placed::Location(sand) = sandfall_p2(&mut map, &bounds.1, &Vertex { x: 500, y: 0 }) {
         map.insert(sand, Tile::Sand);
         placed += 1;
     }
