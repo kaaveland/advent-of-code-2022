@@ -184,7 +184,10 @@ fn main() -> Result<()> {
         "{row} * 1000 + {col} * 4 + {face} = {}",
         row * 1000 + col * 4 + face
     );
-
+    let squares = find_squares(&map).context("Unable to locate any squares!")?;
+    let simple_edges = find_connected_edges(&squares);
+    println!("{squares:?}");
+    println!("{simple_edges:?}");
     Ok(())
 }
 
@@ -263,10 +266,74 @@ fn find_squares(map: &Map) -> Option<Vec<Square>> {
     return Some(squares);
 }
 
+#[derive(Eq, PartialEq, Debug, Copy, Clone)]
+struct EdgeType {
+    direction: Direction,
+    //normal: Nothing,
+}
+
+fn manhattan_dist(left: (CoordSize, CoordSize), right: (CoordSize, CoordSize)) -> CoordSize {
+    (left.0 - right.0).abs() + (left.1 - right.1).abs()
+}
+
+impl Square {
+    fn nw(&self) -> (CoordSize, CoordSize) {
+        self.northwest
+    }
+    fn ne(&self) -> (CoordSize, CoordSize) {
+        (self.northwest.0 + self.dim - 1, self.northwest.1)
+    }
+    fn sw(&self) -> (CoordSize, CoordSize) {
+        (self.northwest.0, self.northwest.1 + self.dim - 1)
+    }
+    fn se(&self) -> (CoordSize, CoordSize) {
+        (
+            self.northwest.0 + self.dim - 1,
+            self.northwest.1 + self.dim - 1,
+        )
+    }
+
+    // Identify _simple_ connection -- using any of these won't change
+    // the direction
+    fn connection(&self, other: &Square) -> Option<Direction> {
+        if manhattan_dist(self.nw(), other.ne()) <= 1 {
+            Some(WEST)
+        } else if manhattan_dist(self.nw(), other.sw()) <= 1 {
+            Some(NORTH)
+        } else if manhattan_dist(self.sw(), other.nw()) <= 1 {
+            Some(SOUTH)
+        } else if manhattan_dist(self.ne(), other.nw()) <= 1 {
+            Some(EAST)
+        } else {
+            None
+        }
+    }
+}
+
+fn find_connected_edges(squares: &Vec<Square>) -> Vec<(usize, usize, Direction)> {
+    // Start by finding all the simple connections
+    squares
+        .iter()
+        .enumerate()
+        .map(|(src, origin)| {
+            squares
+                .iter()
+                .enumerate()
+                .filter_map(|(dst, candidate)| {
+                    origin.connection(candidate).map(|dir| (src, dst, dir))
+                })
+                .collect_vec()
+        })
+        .flatten()
+        .collect_vec()
+}
+
 #[cfg(test)]
 pub mod tests {
     use crate::Tile::*;
-    use crate::{find_squares, next_position, parse, CoordSize, Square, Tile};
+    use crate::{
+        find_connected_edges, find_squares, next_position, parse, CoordSize, Square, Tile,
+    };
     use crate::{EAST, NORTH, SOUTH, WEST};
     use itertools::Itertools;
 
@@ -280,10 +347,21 @@ pub mod tests {
     ];
 
     #[test]
+    fn test_finds_simply_connected_edges_on_example() {
+        let (map, _) = parse(EXAMPLE).unwrap();
+        let squares = find_squares(&map).unwrap();
+        let edges = find_connected_edges(&squares);
+        assert!(!edges.is_empty());
+        assert_eq!(edges.len() % 2, 0);
+        println!("{edges:?}");
+    }
+
+    #[test]
     fn test_finds_cube_faces_on_example() {
         let (map, _) = parse(EXAMPLE).unwrap();
         assert!(find_squares(&map).is_some());
         let squares = find_squares(&map).unwrap();
+        println!("{squares:?}");
         assert!(squares.contains(&Square {
             northwest: (8, 0),
             dim: 4
