@@ -116,6 +116,47 @@ pub mod point2d {
         }
     }
 
+    pub trait Rem<T> {
+        fn rem_euclid(self, divisor: T) -> T;
+    }
+    impl Rem<i32> for i32 {
+        fn rem_euclid(self, divisor: i32) -> i32 {
+            self.rem_euclid(divisor)
+        }
+    }
+    impl Rem<i64> for i64 {
+        fn rem_euclid(self, divisor: i64) -> i64 {
+            self.rem_euclid(divisor)
+        }
+    }
+    impl Rem<usize> for usize {
+        fn rem_euclid(self, divisor: usize) -> usize {
+            self.rem_euclid(divisor)
+        }
+    }
+    impl Rem<u32> for u32 {
+        fn rem_euclid(self, divisor: u32) -> u32 {
+            self.rem_euclid(divisor)
+        }
+    }
+    impl Rem<u64> for u64 {
+        fn rem_euclid(self, divisor: u64) -> u64 {
+            self.rem_euclid(divisor)
+        }
+    }
+
+    impl<T> Point2d<T>
+    where
+        T: Rem<T>,
+    {
+        pub fn wrap(self, xmax: T, ymax: T) -> Self {
+            Self {
+                x: self.x.rem_euclid(xmax),
+                y: self.y.rem_euclid(ymax),
+            }
+        }
+    }
+
     impl<T> Point2d<T>
     where
         T: Add<Output = T>
@@ -137,6 +178,7 @@ pub mod point2d {
                 y: self.y - 1.into(),
             }
         }
+
         pub fn north(self) -> Self {
             Self {
                 x: self.x,

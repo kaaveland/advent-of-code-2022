@@ -1,4 +1,4 @@
-use anyhow::{Context, Error, Result};
+use anyhow::Result;
 use aoc::io::read_stdin;
 use aoc::point2d::{Point2d, Rect};
 use itertools::Itertools;
@@ -157,7 +157,6 @@ fn main() -> Result<()> {
 pub mod tests {
 
     use crate::{next_board, parse_board, run_part_1, run_part_2, Direction};
-    use itertools::Itertools;
 
     const EXAMPLE: &str = "....#..
 ..###.#
