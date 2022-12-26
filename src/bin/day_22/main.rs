@@ -1,7 +1,5 @@
 use anyhow::{anyhow, Context, Result};
 use aoc::io::read_stdin;
-use itertools::Itertools;
-use std::cmp::{max, min};
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Tile {
@@ -63,10 +61,6 @@ fn turn(direction: Direction, turn: Turn) -> Direction {
     }
 }
 
-fn face_back(direction: Direction) -> Direction {
-    turn(turn(direction, Turn::L), Turn::L).rem_euclid(4)
-}
-
 fn heading(direction: Direction) -> Heading {
     HEADINGS[direction.rem_euclid(HEADINGS.len() as Direction) as usize]
 }
@@ -100,7 +94,6 @@ fn hike(map: &Map, steps: &Vec<Step>) -> (CoordSize, CoordSize, Direction) {
     }
     let mut dir = EAST;
     for step in steps {
-        println!("At {pos:?} take {step:?}");
         match *step {
             Orient(t) => {
                 dir = turn(dir, t);
@@ -184,157 +177,14 @@ fn main() -> Result<()> {
         "{row} * 1000 + {col} * 4 + {face} = {}",
         row * 1000 + col * 4 + face
     );
-    let squares = find_squares(&map).context("Unable to locate any squares!")?;
-    let simple_edges = find_connected_edges(&squares);
-    println!("{squares:?}");
-    println!("{simple_edges:?}");
     Ok(())
-}
-
-fn lookup(map: &Map, point: (CoordSize, CoordSize)) -> Option<Tile> {
-    if (0..map.len()).contains(&(point.1 as usize))
-        && (0..map[0].len()).contains(&(point.0 as usize))
-    {
-        Some(map[point.1 as usize][point.0 as usize])
-    } else {
-        None
-    }
-}
-
-fn next_loc(
-    map: &Map,
-    point: (CoordSize, CoordSize),
-    dir: Direction,
-) -> Option<(CoordSize, CoordSize)> {
-    let (dx, dy) = heading(dir);
-    let nx = point.0 + dx;
-    let ny = point.1 + dy;
-    if (0..map.len()).contains(&(ny as usize)) && (0..map[1].len()).contains(&(nx as usize)) {
-        Some((nx, ny))
-    } else {
-        None
-    }
-}
-
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
-struct Square {
-    northwest: (CoordSize, CoordSize),
-    dim: CoordSize,
-}
-
-// It's a cube, so there must be 6 faces
-fn find_squares(map: &Map) -> Option<Vec<Square>> {
-    // We know that there are 6 squares, so by finding the total area
-    // and dividing it by 6, we know that we have the area of 1 square
-    // Taking the sqrt gives us the size of a side
-    let area: usize = map
-        .iter()
-        .map(|row| row.iter().filter(|&tile| *tile != Tile::Abyss).count())
-        .sum();
-    if area % 6 != 0 {
-        return None;
-    }
-
-    let face_area = area / 6;
-    let face_dim = (face_area as f64).sqrt() as usize;
-
-    if face_dim * face_dim != face_area {
-        return None;
-    }
-    if map.len() % face_dim != 0 || map[0].len() % face_dim != 0 {
-        return None;
-    }
-    let map_height = map.len() / face_dim;
-    let map_width = map[0].len() / face_dim;
-    let origins = (0..map_height)
-        .map(|y| (0..map_width).map(|x| (y, x)).collect_vec())
-        .flatten()
-        .filter(|(y, x)| map[y * face_dim][x * face_dim] != Tile::Abyss)
-        .collect_vec();
-
-    if origins.len() != 6 {
-        return None;
-    }
-    let squares = origins
-        .into_iter()
-        .map(|(y, x)| Square {
-            northwest: ((face_dim * x) as CoordSize, (face_dim * y) as CoordSize),
-            dim: face_dim as CoordSize,
-        })
-        .collect_vec();
-
-    return Some(squares);
-}
-
-#[derive(Eq, PartialEq, Debug, Copy, Clone)]
-struct EdgeType {
-    direction: Direction,
-    //normal: Nothing,
-}
-
-fn manhattan_dist(left: (CoordSize, CoordSize), right: (CoordSize, CoordSize)) -> CoordSize {
-    (left.0 - right.0).abs() + (left.1 - right.1).abs()
-}
-
-impl Square {
-    fn nw(&self) -> (CoordSize, CoordSize) {
-        self.northwest
-    }
-    fn ne(&self) -> (CoordSize, CoordSize) {
-        (self.northwest.0 + self.dim - 1, self.northwest.1)
-    }
-    fn sw(&self) -> (CoordSize, CoordSize) {
-        (self.northwest.0, self.northwest.1 + self.dim - 1)
-    }
-    fn se(&self) -> (CoordSize, CoordSize) {
-        (
-            self.northwest.0 + self.dim - 1,
-            self.northwest.1 + self.dim - 1,
-        )
-    }
-
-    // Identify _simple_ connection -- using any of these won't change
-    // the direction
-    fn connection(&self, other: &Square) -> Option<Direction> {
-        if manhattan_dist(self.nw(), other.ne()) <= 1 {
-            Some(WEST)
-        } else if manhattan_dist(self.nw(), other.sw()) <= 1 {
-            Some(NORTH)
-        } else if manhattan_dist(self.sw(), other.nw()) <= 1 {
-            Some(SOUTH)
-        } else if manhattan_dist(self.ne(), other.nw()) <= 1 {
-            Some(EAST)
-        } else {
-            None
-        }
-    }
-}
-
-fn find_connected_edges(squares: &Vec<Square>) -> Vec<(usize, usize, Direction)> {
-    // Start by finding all the simple connections
-    squares
-        .iter()
-        .enumerate()
-        .map(|(src, origin)| {
-            squares
-                .iter()
-                .enumerate()
-                .filter_map(|(dst, candidate)| {
-                    origin.connection(candidate).map(|dir| (src, dst, dir))
-                })
-                .collect_vec()
-        })
-        .flatten()
-        .collect_vec()
 }
 
 #[cfg(test)]
 pub mod tests {
-    use crate::Tile::*;
-    use crate::{
-        find_connected_edges, find_squares, next_position, parse, CoordSize, Square, Tile,
-    };
-    use crate::{EAST, NORTH, SOUTH, WEST};
+    use super::Tile::*;
+    use super::*;
+
     use itertools::Itertools;
 
     const EX_MAP: [[Tile; 6]; 6] = [
@@ -345,48 +195,6 @@ pub mod tests {
         [Abyss, Abyss, Wall, Open, Open, Abyss],
         [Abyss, Abyss, Open, Open, Open, Abyss],
     ];
-
-    #[test]
-    fn test_finds_simply_connected_edges_on_example() {
-        let (map, _) = parse(EXAMPLE).unwrap();
-        let squares = find_squares(&map).unwrap();
-        let edges = find_connected_edges(&squares);
-        assert!(!edges.is_empty());
-        assert_eq!(edges.len() % 2, 0);
-        println!("{edges:?}");
-    }
-
-    #[test]
-    fn test_finds_cube_faces_on_example() {
-        let (map, _) = parse(EXAMPLE).unwrap();
-        assert!(find_squares(&map).is_some());
-        let squares = find_squares(&map).unwrap();
-        println!("{squares:?}");
-        assert!(squares.contains(&Square {
-            northwest: (8, 0),
-            dim: 4
-        }));
-        assert!(squares.contains(&Square {
-            northwest: (0, 4),
-            dim: 4
-        }));
-        assert!(squares.contains(&Square {
-            northwest: (4, 4),
-            dim: 4
-        }));
-        assert!(squares.contains(&Square {
-            northwest: (8, 4),
-            dim: 4
-        }));
-        assert!(squares.contains(&Square {
-            northwest: (8, 8),
-            dim: 4
-        }));
-        assert!(squares.contains(&Square {
-            northwest: (12, 8),
-            dim: 4
-        }));
-    }
 
     #[test]
     fn test_next_position_stopped_by_wall() {
@@ -425,7 +233,7 @@ pub mod tests {
         use super::Step::*;
         use super::Turn::*;
         let ex = "10R5L5R10L4R5L5";
-        let hike = super::parse_hike(ex).unwrap();
+        let hike = parse_hike(ex).unwrap();
         assert_eq!(
             hike,
             vec![
