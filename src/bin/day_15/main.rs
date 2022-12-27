@@ -99,6 +99,13 @@ fn find_distress_beacon(map: &Map) -> Option<Location> {
         _ => (ymin, ymax),
     });
 
+    let xdist = xmax - xmin;
+    let xmin = xmin + xdist / 5;
+    let xmax = xmax - xdist / 5;
+    let ydist = ymax - ymin;
+    let ymin = ymin + ydist / 5;
+    let ymax = ymax - ydist / 5;
+
     // Must be 1 unit outside sensor/beacon distance
     // Generate those possible places
     for Input(sensor, beacon) in map.iter() {
