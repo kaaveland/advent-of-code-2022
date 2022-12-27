@@ -19,8 +19,8 @@ fn dir_traversal(inp: &str) -> Vec<i64> {
                 .next()
                 .and_then(|num| num.parse::<i64>().ok())
                 .unwrap_or(0);
-            for i in 0..stack.len() {
-                stack[i] += num;
+            for total in &mut stack {
+                *total += num;
             }
         }
     }

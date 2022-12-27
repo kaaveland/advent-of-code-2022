@@ -81,7 +81,7 @@ pub mod point2d {
             let ydim = (self.southeast.y - self.northwest.y) + 1.into();
             (xdim, ydim)
         }
-        pub fn bound<'a>(points: impl Iterator<Item = Point2d<T>>) -> Rect<T> {
+        pub fn bound(points: impl Iterator<Item = Point2d<T>>) -> Rect<T> {
             let bounds = points.fold(((0.into(), 0.into()), (0.into(), 0.into())), |b, p| {
                 let (xmin, xmax) = b.0;
                 let (ymin, ymax) = b.1;

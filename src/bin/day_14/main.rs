@@ -268,7 +268,7 @@ mod tests {
             }
             _ => panic!("Should place first sand"),
         }
-        let second_sandfall = sandfall(&mut map, &bounds, &Vertex { x: 500, y: 0 });
+        let second_sandfall = sandfall(&map, &bounds, &Vertex { x: 500, y: 0 });
         assert_eq!(second_sandfall, Location(Vertex { x: 499, y: 8 }));
     }
 
@@ -281,7 +281,7 @@ mod tests {
         }
         let bounds = bounds_of(&map).unwrap();
         let mut placed = 0;
-        while let Location(sand) = sandfall(&mut map, &bounds, &Vertex { x: 500, y: 0 }) {
+        while let Location(sand) = sandfall(&map, &bounds, &Vertex { x: 500, y: 0 }) {
             map.insert(sand, Tile::Sand);
             placed += 1;
         }
@@ -298,7 +298,7 @@ mod tests {
         let ((xmin, xmax), (ymin, ymax)) = bounds_of(&map).unwrap();
         let bounds = ((xmin, xmax), (ymin, ymax));
         let mut placed = 0;
-        while let Location(sand) = sandfall_p2(&mut map, &bounds.1, &Vertex { x: 500, y: 0 }) {
+        while let Location(sand) = sandfall_p2(&map, &bounds.1, &Vertex { x: 500, y: 0 }) {
             map.insert(sand, Tile::Sand);
             placed += 1;
         }
@@ -317,7 +317,7 @@ fn main() -> Result<()> {
     let bounds = bounds_of(&map)?;
 
     let mut placed = 0;
-    while let Placed::Location(sand) = sandfall(&mut map, &bounds, &Vertex { x: 500, y: 0 }) {
+    while let Placed::Location(sand) = sandfall(&map, &bounds, &Vertex { x: 500, y: 0 }) {
         map.insert(sand, Tile::Sand);
         placed += 1;
     }
@@ -331,7 +331,7 @@ fn main() -> Result<()> {
     }
     let bounds = bounds_of(&map)?;
     let mut placed = 0;
-    while let Placed::Location(sand) = sandfall_p2(&mut map, &bounds.1, &Vertex { x: 500, y: 0 }) {
+    while let Placed::Location(sand) = sandfall_p2(&map, &bounds.1, &Vertex { x: 500, y: 0 }) {
         map.insert(sand, Tile::Sand);
         placed += 1;
     }

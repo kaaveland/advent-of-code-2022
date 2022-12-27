@@ -33,7 +33,9 @@ Monkey 3:
 
 #[derive(PartialEq, Debug)]
 enum Operation {
-    Add(u64), Mul(u64), Square()
+    Add(u64),
+    Mul(u64),
+    Square(),
 }
 
 #[derive(PartialEq, Debug)]
@@ -54,7 +56,10 @@ fn parse_monkey_block(monkey: &str) -> Option<Monkey> {
     let id: usize = groups.get(1)?.as_str().parse().ok()?;
 
     let starting_items_text: &str = groups.get(2)?.as_str();
-    let items: Vec<u64> = starting_items_text.split(", ").filter_map(| it | it.parse().ok()).collect();
+    let items: Vec<u64> = starting_items_text
+        .split(", ")
+        .filter_map(|it| it.parse().ok())
+        .collect();
 
     let op_text = groups.get(3)?.as_str();
     let op = if op_text == "old * old" {
@@ -73,12 +78,18 @@ fn parse_monkey_block(monkey: &str) -> Option<Monkey> {
         }
     }?;
 
-
     let divides_by: u64 = groups.get(4)?.as_str().parse().ok()?;
     let pos_monkey: usize = groups.get(5)?.as_str().parse().ok()?;
     let neg_monkey: usize = groups.get(6)?.as_str().parse().ok()?;
 
-    Some(Monkey {id, items, op, divides_by, pos_monkey, neg_monkey})
+    Some(Monkey {
+        id,
+        items,
+        op,
+        divides_by,
+        pos_monkey,
+        neg_monkey,
+    })
 }
 
 #[cfg(test)]
@@ -86,7 +97,7 @@ fn parse_monkey_block(monkey: &str) -> Option<Monkey> {
 fn test_parse_monkey_block() {
     let input = EXAMPLE.split("\n\n").next().unwrap();
     let maybe_monkey = parse_monkey_block(input);
-    assert_eq!(maybe_monkey.is_some(), true);
+    assert!(maybe_monkey.is_some());
     let monkey = maybe_monkey.unwrap();
     assert_eq!(monkey.id, 0);
     assert_eq!(monkey.items, vec![79, 98]);
@@ -111,20 +122,28 @@ fn new_value(old: u64, op: &Operation) -> u64 {
     match op {
         Operation::Square() => old * old,
         Operation::Mul(arg) => old * arg,
-        Operation::Add(arg) => old + arg
+        Operation::Add(arg) => old + arg,
     }
 }
 
-fn do_monkey_turn(monkey_id: usize, monkeys: &mut Vec<Monkey>, counter: &mut HashMap<usize, usize>, modulo: bool) {
-    let base = monkeys.iter().fold(1, | product, m | product * m.divides_by);
+fn do_monkey_turn(
+    monkey_id: usize,
+    monkeys: &mut [Monkey],
+    counter: &mut HashMap<usize, usize>,
+    modulo: bool,
+) {
+    let base = monkeys.iter().fold(1, |product, m| product * m.divides_by);
 
     let monkey = &mut monkeys[monkey_id];
     let mut moves: Vec<(usize, u64)> = Vec::new();
-    
 
     for item in &monkey.items {
         let new_worry = new_value(*item, &monkey.op);
-        let worry = if modulo { new_worry % base } else { new_worry / 3 };
+        let worry = if modulo {
+            new_worry % base
+        } else {
+            new_worry / 3
+        };
         let target_monkey = if worry % monkey.divides_by == 0 {
             monkey.pos_monkey
         } else {
@@ -173,7 +192,7 @@ fn test_monkey_game() {
 }
 
 fn main() {
-    let lines: Vec<String> = stdin().lines().filter_map(|line | line.ok()).collect();
+    let lines: Vec<String> = stdin().lines().filter_map(|line| line.ok()).collect();
     let inp = lines.join("\n");
     let monkey_business = monkey_game(inp.as_str(), 20, false);
     println!("Part 1: {}", monkey_business);

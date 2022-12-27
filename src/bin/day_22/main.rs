@@ -146,12 +146,12 @@ fn hike(map: &Map, steps: &Vec<Step>) -> (CoordSize, CoordSize, Direction) {
                 dir = turn(dir, t);
             }
             Forward(mut steps) => {
-                let mut next_pos = next_position(&map, pos, dir);
+                let mut next_pos = next_position(map, pos, dir);
 
                 while pos != next_pos && steps > 0 {
                     steps -= 1;
                     pos = next_pos;
-                    next_pos = next_position(&map, pos, dir);
+                    next_pos = next_position(map, pos, dir);
                 }
             }
         }
@@ -271,6 +271,9 @@ pub mod tests {
     use super::Tile::*;
     use super::*;
 
+    const NORTH: Direction = 3;
+    const SOUTH: Direction = 1;
+    const WEST: Direction = 2;
     use itertools::Itertools;
 
     const EX_MAP: [[Tile; 6]; 6] = [

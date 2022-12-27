@@ -1,19 +1,26 @@
+use anyhow::{Context, Result};
 use std::collections::HashSet;
 use std::io;
 use std::io::Read;
 use std::time::Instant;
-use anyhow::{Context, Result};
 
 use regex::Regex;
 #[derive(PartialEq, Eq, Debug, Hash, Clone, Copy)]
 pub struct Location(i32, i32);
 impl Location {
-    fn x(&self) -> i32 { match self { Location(x, _) => *x }}
-    fn y(&self) -> i32 { match self { Location(_, y) => *y }}
+    fn x(&self) -> i32 {
+        match self {
+            Location(x, _) => *x,
+        }
+    }
+    fn y(&self) -> i32 {
+        match self {
+            Location(_, y) => *y,
+        }
+    }
 }
 
-fn manhattan_dist(left: &Location, right: &Location) -> i32
-{
+fn manhattan_dist(left: &Location, right: &Location) -> i32 {
     (left.x() - right.x()).abs() + (left.y() - right.y()).abs()
 }
 
@@ -22,7 +29,10 @@ pub struct Input(Location, Location);
 type Map = Vec<Input>;
 
 impl From<(i32, i32)> for Location {
-    fn from(tup: (i32, i32)) -> Self { match tup { (x, y) => Location(x, y) } }
+    fn from(tup: (i32, i32)) -> Self {
+        let (x, y) = tup;
+        Location(x, y)
+    }
 }
 impl From<Location> for (i32, i32) {
     fn from(loc: Location) -> Self {
@@ -31,11 +41,15 @@ impl From<Location> for (i32, i32) {
 }
 
 fn parse_lines<T: AsRef<str>>(input: T) -> Result<Map> {
-    let re = Regex::new(r"Sensor at x=(-?[0-9]+), y=(-?[0-9]+): closest beacon is at x=(-?[0-9]+), y=(-?[0-9]+)")?;
+    let re = Regex::new(
+        r"Sensor at x=(-?[0-9]+), y=(-?[0-9]+): closest beacon is at x=(-?[0-9]+), y=(-?[0-9]+)",
+    )?;
 
-    input.as_ref().lines()
+    input
+        .as_ref()
+        .lines()
         .filter(|l| !l.is_empty())
-        .map(| l | {
+        .map(|l| {
             let caps = re.captures(l).context("Expected match")?;
             let x1s = caps.get(1).context("Expected x1")?;
             let y1s = caps.get(2).context("Expected y1")?;
@@ -46,7 +60,8 @@ fn parse_lines<T: AsRef<str>>(input: T) -> Result<Map> {
             let x2 = x2s.as_str().parse()?;
             let y2 = y2s.as_str().parse()?;
             Ok(Input(Location(x1, y1), Location(x2, y2)))
-        }).collect()
+        })
+        .collect()
 }
 
 fn solve_problem_one(inputs: &Map, row: i32) -> usize {
@@ -73,23 +88,17 @@ fn solve_problem_one(inputs: &Map, row: i32) -> usize {
 
 fn find_distress_beacon(map: &Map) -> Option<Location> {
     let mut candidate_locations = HashSet::new();
-    let (xmin, xmax) = map.iter()
-        .fold((0, 0), |(xmin, xmax), input| {
-            match input {
-                Input(Location(x, _), _) if *x < xmin => { (*x, xmax) }
-                Input(Location(x, _), _) if *x > xmax => { (xmin, *x) }
-                _ => (xmin, xmax)
-            }
-        });
-    let (ymin, ymax) = map.iter()
-        .fold((0, 0), |(ymin, ymax), input| {
-            match input {
-                Input(Location(_, y), _) if *y < ymin => { (*y, ymax) }
-                Input(Location(_, y), _) if *y > ymax => { (ymin, *y) }
-                _ => (ymin, ymax)
-            }
-        });
-    
+    let (xmin, xmax) = map.iter().fold((0, 0), |(xmin, xmax), input| match input {
+        Input(Location(x, _), _) if *x < xmin => (*x, xmax),
+        Input(Location(x, _), _) if *x > xmax => (xmin, *x),
+        _ => (xmin, xmax),
+    });
+    let (ymin, ymax) = map.iter().fold((0, 0), |(ymin, ymax), input| match input {
+        Input(Location(_, y), _) if *y < ymin => (*y, ymax),
+        Input(Location(_, y), _) if *y > ymax => (ymin, *y),
+        _ => (ymin, ymax),
+    });
+
     // Must be 1 unit outside sensor/beacon distance
     // Generate those possible places
     for Input(sensor, beacon) in map.iter() {
@@ -104,29 +113,27 @@ fn find_distress_beacon(map: &Map) -> Option<Location> {
             let ne = Location(sensor.x() + i, sensor.y() + (outside - i));
             if ne.y() >= ymin && ne.y() <= ymax && ne.x() >= xmin && ne.x() <= xmax {
                 candidate_locations.insert(ne);
-            }            
+            }
             let sw = Location(sensor.x() - i, sensor.y() - (outside - i));
             if sw.y() >= ymin && sw.y() <= ymax && sw.x() >= xmin && sw.x() <= xmax {
                 candidate_locations.insert(sw);
-            }            
+            }
             let se = Location(sensor.x() + i, sensor.y() - (outside - i));
             if se.y() >= ymin && se.y() <= ymax && se.x() >= xmin && se.x() <= xmax {
                 candidate_locations.insert(se);
-            }            
+            }
         }
     }
 
-    candidate_locations = candidate_locations.iter().filter(| &Location(x, y) | {
-        *x >= xmin && *x <= xmax && *y >= ymin && *y <= ymax
-    }).cloned().collect();
-
+    candidate_locations = candidate_locations
+        .iter()
+        .filter(|&Location(x, y)| *x >= xmin && *x <= xmax && *y >= ymin && *y <= ymax)
+        .cloned()
+        .collect();
 
     for Input(sensor, beacon) in map.iter() {
         let dist = manhattan_dist(sensor, beacon);
-        candidate_locations = candidate_locations.iter()
-            .filter(|&loc| manhattan_dist(sensor, loc) > dist)
-            .cloned()
-            .collect();
+        candidate_locations.retain(|loc| manhattan_dist(sensor, loc) > dist);
     }
 
     println!("Found {} after filter", candidate_locations.len());
@@ -146,7 +153,9 @@ fn tuning_distance(loc: &Location) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{find_distress_beacon, Input, Location, manhattan_dist, parse_lines, solve_problem_one};
+    use crate::{
+        find_distress_beacon, manhattan_dist, parse_lines, solve_problem_one, Input, Location,
+    };
 
     const EXAMPLE: &str = "Sensor at x=2, y=18: closest beacon is at x=-2, y=15
 Sensor at x=9, y=16: closest beacon is at x=10, y=16
@@ -170,24 +179,16 @@ Sensor at x=20, y=1: closest beacon is at x=15, y=3
         let left = Location(-1, 0);
         let diag_right = Location(1, 1);
 
-        assert_eq!(
-            manhattan_dist(&origin, &left), 1
-        );
-        assert_eq!(
-            manhattan_dist(&diag_right, &origin), 2
-        );
+        assert_eq!(manhattan_dist(&origin, &left), 1);
+        assert_eq!(manhattan_dist(&diag_right, &origin), 2);
     }
 
     #[test]
     fn test_parsing() {
         let inputs = parse_lines(EXAMPLE).unwrap();
         let first = &inputs[0];
-        assert_eq!(
-            first, &Input(Location(2, 18), Location(-2, 15))
-        );
-        assert_eq!(
-            &inputs[1], &Input(Location(9, 16), Location(10, 16))
-        );
+        assert_eq!(first, &Input(Location(2, 18), Location(-2, 15)));
+        assert_eq!(&inputs[1], &Input(Location(9, 16), Location(10, 16)));
     }
 
     #[test]

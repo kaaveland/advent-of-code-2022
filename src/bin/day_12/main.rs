@@ -90,10 +90,7 @@ where
     F: Fn(usize) -> bool,
 {
     let mut queue: VecDeque<usize> = vec![source].into();
-    let mut costs: Vec<usize> = Vec::with_capacity(landscape.len());
-    for _ in 0..landscape.len() {
-        costs.push(0);
-    }
+    let mut costs: Vec<usize> = vec![0; landscape.len()];
 
     while !queue.is_empty() {
         let now = queue.pop_front().unwrap(); // Safe -- not empty

@@ -63,7 +63,7 @@ fn parse_board(input: &str) -> Board {
         .lines()
         .filter(|line| !line.is_empty())
         .enumerate()
-        .map(move |(y, row)| {
+        .flat_map(move |(y, row)| {
             row.chars().enumerate().filter_map(move |(x, ch)| {
                 if ch == '#' {
                     Some((x as i64, y as i64).into())
@@ -72,13 +72,12 @@ fn parse_board(input: &str) -> Board {
                 }
             })
         })
-        .flatten()
         .sorted()
         .collect()
 }
 
 fn next_board(board: &Board, current_dir: &Direction) -> Board {
-    let mut claims = HashMap::new();
+    let mut claims: HashMap<_, Vec<_>> = HashMap::new();
     let mut next_board: Board = Board::new();
 
     for elf in board {
@@ -93,7 +92,7 @@ fn next_board(board: &Board, current_dir: &Direction) -> Board {
             for dir in current_dir.prioritized() {
                 if board.intersection(&dir.of(elf)).count() == 0 {
                     let claim = dir.adjust(elf);
-                    claims.entry(claim).or_insert(vec![]).push(elf);
+                    claims.entry(claim).or_default().push(elf);
                     claimed = true;
                     break;
                 }
