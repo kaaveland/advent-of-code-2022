@@ -1,6 +1,6 @@
-use std::io::{Read, stdin};
-use anyhow::{Result, Error, Context};
+use anyhow::{Context, Error, Result};
 use itertools::Itertools;
+use std::io::{stdin, Read};
 
 fn parse_input(input: &str) -> Result<Vec<Vec<i32>>> {
     let mut calorie_groups: Vec<Vec<i32>> = Vec::new();
@@ -22,17 +22,22 @@ fn parse_input(input: &str) -> Result<Vec<Vec<i32>>> {
     Ok(calorie_groups)
 }
 
-fn largest_group(groups: &Vec<Vec<i32>>) -> Result<i32> {
+fn largest_group(groups: &[Vec<i32>]) -> Result<i32> {
     groups
-        .iter().map(| v | v.into_iter().sum())
-        .max().context("Empty groups")
+        .iter()
+        .map(|v| v.iter().sum())
+        .max()
+        .context("Empty groups")
 }
 
-fn top_n(groups: &Vec<Vec<i32>>, n: usize) -> Result<i32> {
+fn top_n(groups: &[Vec<i32>], n: usize) -> Result<i32> {
     let top_n: Vec<i32> = groups
-        .iter().map(| v | v.into_iter().sum())
-        .sorted().rev()
-        .take(n).collect();
+        .iter()
+        .map(|v| v.iter().sum())
+        .sorted()
+        .rev()
+        .take(n)
+        .collect();
     if top_n.len() != 3 {
         Err(Error::msg("Too few groups"))
     } else {
@@ -78,7 +83,6 @@ mod tests {
         let groups = super::parse_input(EXAMPLE).expect("Unable to parse");
         assert_eq!(top_n(&groups, 3).expect("Too few n"), 45000);
     }
-
 }
 fn main() -> Result<()> {
     let mut buf = String::new();

@@ -1,13 +1,14 @@
 use std::cmp::Ordering;
-use std::io::{Read, stdin};
+use std::io::{stdin, Read};
 use std::iter::Peekable;
-use std::str::{Chars};
+use std::str::Chars;
 
 use anyhow::{Context, Error, Result};
 
 #[derive(PartialEq, Eq, Debug)]
 enum Packets {
-    Integer(i32), List(Vec<Packets>)
+    Integer(i32),
+    List(Vec<Packets>),
 }
 
 impl PartialOrd for Packets {
@@ -18,28 +19,25 @@ impl PartialOrd for Packets {
 
 impl Ord for Packets {
     fn cmp(&self, other: &Self) -> Ordering {
+        use std::cmp::Ordering::{Equal, Greater, Less};
         use Packets::{Integer, List};
-        use std::cmp::Ordering::{Greater, Equal, Less};
         match self {
             Integer(left) => match other {
                 Integer(right) => left.cmp(right),
-                List(_) => List(vec![Integer(*left)]).cmp(other)
+                List(_) => List(vec![Integer(*left)]).cmp(other),
             },
             List(left) => match other {
                 Integer(right) => self.cmp(&List(vec![Integer(*right)])),
-                List(right) => {
-                    left
-                        .iter()
-                        .zip(right)
-                        .find_map(|(left, right)|
-                            match left.cmp(right) {
-                                Less => { Some(Less)}
-                                Equal => { None }
-                                Greater => { Some(Greater)}
-                        })
-                        .unwrap_or_else(|| left.len().cmp(&right.len()))
-                }
-            }
+                List(right) => left
+                    .iter()
+                    .zip(right)
+                    .find_map(|(left, right)| match left.cmp(right) {
+                        Less => Some(Less),
+                        Equal => None,
+                        Greater => Some(Greater),
+                    })
+                    .unwrap_or_else(|| left.len().cmp(&right.len())),
+            },
         }
     }
 }
@@ -53,24 +51,26 @@ fn parse_item(chars: &mut Peekable<Chars>) -> Result<Packets> {
         Some('[') => parse_list(chars),
         Some(c) => {
             let mut digits: String = c.into();
-            while let Some(digit) = chars.next_if(| &ch | ch.is_digit(10)) {
+            while let Some(digit) = chars.next_if(|&ch| ch.is_ascii_digit()) {
                 digits.push(digit);
             }
             let int = digits.parse()?;
             Ok(Packets::Integer(int))
         }
-        None => Err(Error::msg("Parse error"))
+        None => Err(Error::msg("Parse error")),
     }
 }
 
 fn parse_list(chars: &mut Peekable<Chars>) -> Result<Packets> {
     let mut many = Vec::new();
     loop {
-        if let Some(ch) = chars.next_if(| &ch | ch == ',' || ch == ']') {
+        if let Some(ch) = chars.next_if(|&ch| ch == ',' || ch == ']') {
             match ch {
-                ',' => {},
+                ',' => {}
                 ']' => break,
-                _ => { return Err(Error::msg("Syntax error")); }
+                _ => {
+                    return Err(Error::msg("Syntax error"));
+                }
             }
         } else {
             let item = parse_item(chars)?;
@@ -154,7 +154,6 @@ mod tests {
     }
 }
 
-
 fn main() -> Result<()> {
     let mut buf = String::new();
     stdin().read_to_string(&mut buf)?;
@@ -169,12 +168,13 @@ fn main() -> Result<()> {
 
     println!("Part 1: {}", sum);
 
-    let firsts = pairs.iter().map(| (left, _)| left);
+    let firsts = pairs.iter().map(|(left, _)| left);
     let snds = pairs.iter().map(|(_, right)| right);
     let mut all: Vec<_> = firsts.chain(snds).collect();
     let d1 = list_from_line("[[2]]")?;
     let d2 = list_from_line("[[6]]")?;
-    all.push(&d1); all.push(&d2);
+    all.push(&d1);
+    all.push(&d2);
     all.sort();
     let mut d1_i = 0;
     let mut d2_i = 0;
@@ -190,4 +190,3 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-
