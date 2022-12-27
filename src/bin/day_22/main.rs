@@ -84,6 +84,56 @@ fn next_position(map: &Map, position: Position, direction: Direction) -> Positio
     }
 }
 
+fn next_position_on_cube(
+    map: &Map,
+    position: Position,
+    direction: Direction,
+) -> (Position, Direction) {
+    let (x, y) = position;
+    let (dx, dy) = heading(direction);
+
+    let (nx, ny) = (x + dx, y + dy);
+
+    if nx < 0
+        || nx >= (map[0].len() as CoordSize)
+        || ny < 0
+        || ny >= (map.len() as CoordSize)
+        || map[ny as usize][nx as usize] == Tile::Abyss
+    {
+        // Teleport to another cube face instead
+        let (new_x, new_y, new_dx, new_dy) = match (nx, ny, dx, dy) {
+            (nx, -1, _, _) if (50..100).contains(&nx) => (0, 100 + nx, 1, 0),
+            (-1, ny, _, _) if (150..200).contains(&ny) => (ny - 100, 0, 0, 1),
+            (nx, -1, _, _) if (100..150).contains(&nx) => (nx - 100, 199, 0, -1),
+            (nx, 200, _, _) if (0..50).contains(&nx) => (nx + 100, 0, 0, 1),
+            (49, ny, _, _) if (0..50).contains(&ny) => (0, 149 - ny, 1, 0),
+            (-1, ny, _, _) if (100..150).contains(&ny) => (50, 149 - ny, 1, 0),
+            (150, ny, _, _) if (0..50).contains(&ny) => (99, 149 - ny, -1, 0),
+            (100, ny, _, _) if (100..150).contains(&ny) => (149, 149 - ny, -1, 0),
+            (49, ny, -1, 0) if (50..100).contains(&ny) => (ny - 50, 100, 0, 1),
+            (nx, 99, 0, -1) if (0..50).contains(&nx) => (50, 50 + nx, 1, 0),
+            (nx, 50, 0, 1) if (100..150).contains(&nx) => (99, nx - 50, -1, 0),
+            (100, ny, 1, 0) if (50..100).contains(&ny) => (50 + ny, 49, 0, -1),
+            (nx, 150, 0, 1) if (50..100).contains(&nx) => (49, nx + 100, -1, 0),
+            (50, ny, 1, 0) if (150..200).contains(&ny) => (ny - 100, 149, 0, -1),
+            _ => panic!("No case matches {nx}, {ny}, {dx}, {dy}"),
+        };
+        let mut out_dir = direction;
+        while heading(out_dir) != (new_dx, new_dy) {
+            out_dir += 1;
+        }
+        if map[new_y as usize][new_x as usize] != Tile::Wall {
+            ((new_x, new_y), out_dir)
+        } else {
+            ((x, y), direction)
+        }
+    } else if map[ny as usize][nx as usize] != Tile::Wall {
+        ((nx, ny), direction)
+    } else {
+        ((x, y), direction)
+    }
+}
+
 fn hike(map: &Map, steps: &Vec<Step>) -> (CoordSize, CoordSize, Direction) {
     use Step::*;
 
@@ -105,6 +155,39 @@ fn hike(map: &Map, steps: &Vec<Step>) -> (CoordSize, CoordSize, Direction) {
                     steps -= 1;
                     pos = next_pos;
                     next_pos = next_position(&map, pos, dir);
+                }
+            }
+        }
+    }
+
+    (
+        pos.1 + 1,
+        pos.0 + 1,
+        dir.rem_euclid(HEADINGS.len() as Direction),
+    )
+}
+
+fn hike_cube(map: &Map, steps: &Vec<Step>) -> (CoordSize, CoordSize, Direction) {
+    use Step::*;
+    let mut pos: (CoordSize, CoordSize) = (0, 0);
+
+    while map[pos.1 as usize][pos.0 as usize] != Tile::Open {
+        pos = (pos.0 + 1, pos.1);
+    }
+    let mut dir = EAST;
+
+    for step in steps {
+        match *step {
+            Orient(t) => {
+                dir = turn(dir, t);
+            }
+            Forward(mut steps) => {
+                let (mut next_pos, mut next_dir) = next_position_on_cube(map, pos, dir);
+                while pos != next_pos && steps > 0 {
+                    steps -= 1;
+                    pos = next_pos;
+                    dir = next_dir;
+                    (next_pos, next_dir) = next_position_on_cube(map, pos, dir);
                 }
             }
         }
@@ -177,6 +260,12 @@ fn main() -> Result<()> {
         "{row} * 1000 + {col} * 4 + {face} = {}",
         row * 1000 + col * 4 + face
     );
+    let (row, col, face) = hike_cube(&map, &steps);
+    println!(
+        "{row} * 1000 + {col} * 4 + {face} = {}",
+        row * 1000 + col * 4 + face
+    );
+
     Ok(())
 }
 
