@@ -25,7 +25,7 @@ pub struct Problem {
 }
 
 fn parse_instruction(instr: &str) -> Instruction {
-    let split: Vec<&str> = instr.split(" ").collect();
+    let split: Vec<&str> = instr.split(' ').collect();
     if let [_move,count, _from, source, _to, dest] = split[..] {
         let src: usize = source.parse().expect("Invalid source");
         let dst: usize = dest.parse().expect("Invalid dest");
@@ -51,18 +51,18 @@ fn test_parse_instruction() {
 
 fn parse_problem(description: &str) -> Problem {
     let split: Vec<&str> = description.splitn(2, "\n\n").collect();
-    let initial_state = *split.get(0).expect("Wrong formatting: No empty line separator");
+    let initial_state = *split.first().expect("Wrong formatting: No empty line separator");
     let instructions = *split.get(1).expect("Wrong formatting: No empty line separator");
 
     Problem {
         state: parse_stacks(initial_state),
-        instructions: instructions.split("\n").filter(|s| !s.is_empty()).map(parse_instruction).collect()
+        instructions: instructions.split('\n').filter(|s| !s.is_empty()).map(parse_instruction).collect()
     }
 }
 
 fn parse_stacks(initial_state: &str) -> Vec<Vec<char>> {
-    let lines: Vec<&str> = initial_state.split("\n").collect();
-    let stack_count = lines.last().expect("Wrong formatting: Empty initial_state").split(" ").filter(| s | !s.is_empty()).count();
+    let lines: Vec<&str> = initial_state.split('\n').collect();
+    let stack_count = lines.last().expect("Wrong formatting: Empty initial_state").split(' ').filter(| s | !s.is_empty()).count();
     let mut out: Vec<Vec<char>> = Vec::with_capacity(stack_count);
     for _ in 0..stack_count {
         out.push(Vec::new());
@@ -78,7 +78,7 @@ fn parse_stacks(initial_state: &str) -> Vec<Vec<char>> {
     }
     for i in 0..stack_count {
         let v = out.get(i).unwrap();
-        out[i] = v.into_iter().cloned().rev().collect();
+        out[i] = v.iter().cloned().rev().collect();
     }
     out
 }

@@ -195,7 +195,7 @@ fn search(bp: &Blueprint, ticks: i32) -> i32 {
             panic!("Encountered expired state {:?}", state);
         }
         let remainder = ticks - state.ticks;
-        let rounds = rounds_to_afford(&bp, &state.bank, &state.bots);
+        let rounds = rounds_to_afford(bp, &state.bank, &state.bots);
 
         // Calculate the no more choices approach directly
         let guaranteed_geodes = state.bank[GEODE] + remainder * state.bots[GEODE];

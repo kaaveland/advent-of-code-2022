@@ -45,7 +45,7 @@ pub mod point2d {
         }
     }
     pub trait Sqrt<T> {
-        fn sqrt(self: Self) -> Self;
+        fn sqrt(self) -> Self;
     }
     impl Sqrt<f64> for f64 {
         fn sqrt(self: f64) -> Self {

@@ -60,7 +60,7 @@ fn parse_monkey_block(monkey: &str) -> Option<Monkey> {
     let op = if op_text == "old * old" {
         Some(Operation::Square())
     } else {
-        let mut parts = op_text.split(" ");
+        let mut parts = op_text.split(' ');
         parts.next();
         let operator = parts.next()?;
         let operand = parts.next()?.parse().ok()?;

@@ -21,7 +21,7 @@ fn parse_forest(forest: &str) -> Forest {
     for line in forest.lines() {
         rows += 1;
         for height in line.as_bytes() {
-            out.push(*height - ('0' as u8))
+            out.push(*height - b'0')
         }
     }
 
@@ -60,7 +60,7 @@ fn calculate_visibility_map(forest: &Forest) -> Forest {
         forest: Vec::with_capacity(forest.width * forest.height),
     };
     for _ in 0..(forest.height * forest.width) {
-        out_forest.forest.push(4 as u8);
+        out_forest.forest.push(4_u8);
     }
     for row in 0..forest.height {
         for col in 0..forest.width {

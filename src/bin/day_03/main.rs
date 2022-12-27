@@ -4,9 +4,9 @@ use itertools::Itertools;
 
 fn score(c: char) -> u32 {
     let ordinal = if c.is_uppercase() {
-        c as u8 - 'A' as u8 + 27
+        c as u8 - b'A' + 27
     } else {
-        c as u8 - 'a' as u8 + 1
+        c as u8 - b'a' + 1
     };
     ordinal as u32
 }

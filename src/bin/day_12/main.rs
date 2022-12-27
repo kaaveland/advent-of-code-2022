@@ -196,7 +196,7 @@ fn main() -> Result<()> {
 
     let inverted: Vec<_> = landscape
         .iter()
-        .map(|b| ('z' as u8) - elevation(*b) + b'a')
+        .map(|b| b'z' - elevation(*b) + b'a')
         .collect();
     let cost = bfs(
         dest,

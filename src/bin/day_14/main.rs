@@ -15,7 +15,7 @@ fn parse_vertices(line: &str) -> Result<Wall> {
     let mut vertices = Wall::new();
 
     for xy in line.split(" -> ") {
-        let mut split = xy.split(",");
+        let mut split = xy.split(',');
         let x = split.next().context("Expected x!")?.parse()?;
         let y = split.next().context("Expected y!")?.parse()?;
         vertices.push(Vertex { x, y })
@@ -133,20 +133,18 @@ fn sandfall(map: &Map, bounds: &((i32, i32), (i32, i32)), origin: &Vertex) -> Pl
     // We placed it in the void
     let result = if out_of_bounds(origin, bounds) {
         Placed::Void
-    } else {
-        if occupied(map, &down) {
-            if occupied(map, &down_left) {
-                if occupied(map, &down_right) {
-                    Placed::Occupied
-                } else {
-                    sandfall(map, bounds, &down_right)
-                }
+    } else if occupied(map, &down) {
+        if occupied(map, &down_left) {
+            if occupied(map, &down_right) {
+                Placed::Occupied
             } else {
-                sandfall(map, bounds, &down_left)
+                sandfall(map, bounds, &down_right)
             }
         } else {
-            sandfall(map, bounds, &down)
+            sandfall(map, bounds, &down_left)
         }
+    } else {
+        sandfall(map, bounds, &down)
     };
 
     match result {
@@ -172,20 +170,18 @@ fn sandfall_p2(map: &Map, bounds: &(i32, i32), origin: &Vertex) -> Placed {
 
     let result = if origin.y < bounds.0 || origin.y > bounds.1 {
         Placed::Occupied
-    } else {
-        if occupied(map, &down) {
-            if occupied(map, &down_left) {
-                if occupied(map, &down_right) {
-                    Placed::Occupied
-                } else {
-                    sandfall_p2(map, bounds, &down_right)
-                }
+    } else if occupied(map, &down) {
+        if occupied(map, &down_left) {
+            if occupied(map, &down_right) {
+                Placed::Occupied
             } else {
-                sandfall_p2(map, bounds, &down_left)
+                sandfall_p2(map, bounds, &down_right)
             }
         } else {
-            sandfall_p2(map, bounds, &down)
+            sandfall_p2(map, bounds, &down_left)
         }
+    } else {
+        sandfall_p2(map, bounds, &down)
     };
 
     match result {

@@ -161,7 +161,7 @@ pub enum Instruction {
 }
 
 fn parse_instruction(instr: &str) -> Instruction {
-    let mut parts = instr.split(" ");
+    let mut parts = instr.split(' ');
     let first = parts.next().expect("Empty instruction");
     match first {
         "noop" => Instruction::Noop(),
@@ -179,7 +179,7 @@ fn parse_instruction(instr: &str) -> Instruction {
 #[cfg(test)]
 #[test]
 fn test_parse_program() {
-    let lines: Vec<Instruction> = SMALL_EXAMPLE
+    let _lines: Vec<Instruction> = SMALL_EXAMPLE
         .lines()
         .filter(|l| !l.is_empty())
         .map(parse_instruction)

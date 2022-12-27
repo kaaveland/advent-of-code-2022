@@ -31,7 +31,7 @@ fn parse_droplet(inp: &str) -> HashSet<(i32, i32, i32)> {
     inp.lines()
         .filter(|line| !line.is_empty())
         .map(|line| {
-            let strs: Vec<_> = line.split(",").collect();
+            let strs: Vec<_> = line.split(',').collect();
             (
                 strs[0].parse().unwrap(),
                 strs[1].parse().unwrap(),

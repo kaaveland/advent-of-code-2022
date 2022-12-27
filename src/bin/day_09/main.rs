@@ -25,7 +25,7 @@ fn move_count(instruction: &Move) -> i32 {
 
 fn parse_moves(input: &str) -> Vec<Move> {
     fn to_move(line: &str) -> Move {
-        let mut parts = line.split(" ");
+        let mut parts = line.split(' ');
         let direction = parts.next().expect("Missing direction");
         let count: i32 = parts.next().expect("Missing step count").parse().expect("Bad number");
         match direction {
@@ -70,7 +70,7 @@ fn move_tail(head: &Pos, tail: &Pos) -> Pos {
         } else if y_diff <= -2 {
             Pos { x: tail.x, y: tail.y - 1}
         } else {
-            tail.clone()
+            *tail
         }
     } else if head.y == tail.y {
         let x_diff = head.x - tail.x;
@@ -79,7 +79,7 @@ fn move_tail(head: &Pos, tail: &Pos) -> Pos {
         } else if x_diff <= -2 {
             Pos {x: tail.x - 1, y: tail.y}
         } else {
-            tail.clone()
+            *tail
         }
     } else {
         let x_diff = head.x - tail.x;
@@ -90,7 +90,7 @@ fn move_tail(head: &Pos, tail: &Pos) -> Pos {
             let y_move = if y_diff < 0 { - 1 } else { 1 };
             Pos {x: tail.x + x_move, y: tail.y + y_move }
         } else {
-            tail.clone()
+            *tail
         }
     }
 }
@@ -122,38 +122,38 @@ fn test_move_tail_in_line() {
 }
 
 fn execute_move(state: State, instruction: &Move) -> (State, HashSet<Pos>) {
-    let mut head = state.head.clone();
-    let mut tail = state.tail.clone();
+    let mut head = state.head;
+    let mut tail = state.tail;
     let mut tail_positions = HashSet::new();
-    tail_positions.insert(tail.clone());
+    tail_positions.insert(tail);
 
     match instruction {
         Move::Up(count) => {
             for _ in 0..*count {
                 head.y += 1;
                 tail = move_tail(&head, &tail);
-                tail_positions.insert(tail.clone());
+                tail_positions.insert(tail);
             }
         }
         Move::Down(count) => {
             for _ in 0..*count {
                 head.y -= 1;
                 tail = move_tail(&head, &tail);
-                tail_positions.insert(tail.clone());
+                tail_positions.insert(tail);
             }
         }
         Move::Right(count) => {
             for _ in 0..*count {
                 head.x += 1;
                 tail = move_tail(&head, &tail);
-                tail_positions.insert(tail.clone());
+                tail_positions.insert(tail);
             }
         }
         Move::Left(count) => {
             for _ in 0..*count {
                 head.x -= 1;
                 tail = move_tail(&head, &tail);
-                tail_positions.insert(tail.clone());
+                tail_positions.insert(tail);
             }
         }
     }

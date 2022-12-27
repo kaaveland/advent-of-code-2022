@@ -72,7 +72,7 @@ fn test_one_contains() {
 }
 
 fn parse_section(section: &str) -> Option<SectionRange> {
-    let split: Vec<&str> = section.splitn(2, "-").collect();
+    let split: Vec<&str> = section.splitn(2, '-').collect();
     if let [left, right] = split[..] {
         let start: u32 = left.parse().ok()?;
         let end: u32 = right.parse().ok()?;
@@ -92,7 +92,7 @@ fn test_parse_section() {
 }
 
 fn parse_sections(line: &str) -> Option<(SectionRange, SectionRange)> {
-    let split: Vec<&str> =  line.splitn(2, ",").collect();
+    let split: Vec<&str> =  line.splitn(2, ',').collect();
     if let [left, right] = split[..] {
         let left_sec = parse_section(left)?;
         let right_sec = parse_section(right)?;
@@ -142,7 +142,7 @@ where
 #[cfg(test)]
 #[test]
 fn test_part1_example() {
-    let lines: Vec<&str> = EXAMPLE.split("\n").collect();
+    let lines: Vec<&str> = EXAMPLE.split('\n').collect();
     assert_eq!(predicate_count(lines, part1_predicate), 2);
 }
 
@@ -186,7 +186,7 @@ fn test_part2_predicate() {
 #[cfg(test)]
 #[test]
 fn test_part_2_example() {
-    let lines: Vec<&str> = EXAMPLE.split("\n").collect();
+    let lines: Vec<&str> = EXAMPLE.split('\n').collect();
     assert_eq!(predicate_count(lines, part2_predicate), 4);
 }
 
