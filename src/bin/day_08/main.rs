@@ -1,13 +1,5 @@
 use std::io::stdin;
 
-#[cfg(test)]
-const EXAMPLE: &str = "30373
-25512
-65332
-33549
-35390
-";
-
 struct Forest {
     height: usize,
     width: usize,
@@ -40,17 +32,6 @@ fn index_forest(row: usize, col: usize, forest: &Forest) -> u8 {
 fn decrement_height(row: usize, col: usize, forest: &mut Forest) {
     let index = row * forest.width + col;
     forest.forest[index] -= 1;
-}
-
-#[cfg(test)]
-#[test]
-fn test_parse_example() {
-    let forest = parse_forest(EXAMPLE);
-    assert_eq!(forest.height, 5);
-    assert_eq!(forest.width, 5);
-    assert_eq!(index_forest(0, 0, &forest), 3);
-    assert_eq!(index_forest(1, 1, &forest), 5);
-    assert_eq!(index_forest(4, 2, &forest), 3);
 }
 
 fn calculate_visibility_map(forest: &Forest) -> Forest {
@@ -93,14 +74,6 @@ fn calculate_visibility_map(forest: &Forest) -> Forest {
         }
     }
     out_forest
-}
-#[cfg(test)]
-#[test]
-fn test_calc_visibility_map() {
-    let forest = parse_forest(EXAMPLE);
-    let height_map = calculate_visibility_map(&forest);
-    let visible = height_map.forest.iter().filter(|tree| *tree > &0).count();
-    assert_eq!(visible, 21);
 }
 
 fn calculate_scenic_score_map(forest: &Forest) -> Vec<i32> {
@@ -145,15 +118,6 @@ fn calculate_scenic_score_map(forest: &Forest) -> Vec<i32> {
     out
 }
 
-#[cfg(test)]
-#[test]
-fn test_scenic_visibility_map() {
-    let forest = parse_forest(EXAMPLE);
-    let height_map = calculate_scenic_score_map(&forest);
-    let scenic = *height_map.iter().max().unwrap_or(&0);
-    assert_eq!(scenic, 8);
-}
-
 fn main() {
     let input: Vec<String> = stdin()
         .lines()
@@ -169,4 +133,41 @@ fn main() {
     let scenic_map = calculate_scenic_score_map(&forest);
     let scenic = scenic_map.iter().max();
     println!("Part 2: {}", scenic.unwrap_or(&0));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const EXAMPLE: &str = "30373
+25512
+65332
+33549
+35390
+";
+
+    #[test]
+    fn test_scenic_visibility_map() {
+        let forest = parse_forest(EXAMPLE);
+        let height_map = calculate_scenic_score_map(&forest);
+        let scenic = *height_map.iter().max().unwrap_or(&0);
+        assert_eq!(scenic, 8);
+    }
+
+    #[test]
+    fn test_calc_visibility_map() {
+        let forest = parse_forest(EXAMPLE);
+        let height_map = calculate_visibility_map(&forest);
+        let visible = height_map.forest.iter().filter(|tree| *tree > &0).count();
+        assert_eq!(visible, 21);
+    }
+
+    #[test]
+    fn test_parse_example() {
+        let forest = parse_forest(EXAMPLE);
+        assert_eq!(forest.height, 5);
+        assert_eq!(forest.width, 5);
+        assert_eq!(index_forest(0, 0, &forest), 3);
+        assert_eq!(index_forest(1, 1, &forest), 5);
+        assert_eq!(index_forest(4, 2, &forest), 3);
+    }
 }

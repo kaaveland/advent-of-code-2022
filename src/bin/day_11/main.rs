@@ -1,36 +1,6 @@
 use std::collections::HashMap;
 use std::io::stdin;
 
-#[cfg(test)]
-const EXAMPLE: &str = "Monkey 0:
-  Starting items: 79, 98
-  Operation: new = old * 19
-  Test: divisible by 23
-    If true: throw to monkey 2
-    If false: throw to monkey 3
-
-Monkey 1:
-  Starting items: 54, 65, 75, 74
-  Operation: new = old + 6
-  Test: divisible by 19
-    If true: throw to monkey 2
-    If false: throw to monkey 0
-
-Monkey 2:
-  Starting items: 79, 60, 97
-  Operation: new = old * old
-  Test: divisible by 13
-    If true: throw to monkey 1
-    If false: throw to monkey 3
-
-Monkey 3:
-  Starting items: 74
-  Operation: new = old + 3
-  Test: divisible by 17
-    If true: throw to monkey 0
-    If false: throw to monkey 1
-";
-
 #[derive(PartialEq, Debug)]
 enum Operation {
     Add(u64),
@@ -92,30 +62,8 @@ fn parse_monkey_block(monkey: &str) -> Option<Monkey> {
     })
 }
 
-#[cfg(test)]
-#[test]
-fn test_parse_monkey_block() {
-    let input = EXAMPLE.split("\n\n").next().unwrap();
-    let maybe_monkey = parse_monkey_block(input);
-    assert!(maybe_monkey.is_some());
-    let monkey = maybe_monkey.unwrap();
-    assert_eq!(monkey.id, 0);
-    assert_eq!(monkey.items, vec![79, 98]);
-    assert_eq!(monkey.op, Operation::Mul(19));
-    assert_eq!(monkey.divides_by, 23);
-    assert_eq!(monkey.pos_monkey, 2);
-    assert_eq!(monkey.neg_monkey, 3);
-}
-
 fn parse_monkeys(text: &str) -> Vec<Monkey> {
     text.split("\n\n").filter_map(parse_monkey_block).collect()
-}
-
-#[cfg(test)]
-#[test]
-fn test_parse_monkeys() {
-    let monkeys = parse_monkeys(EXAMPLE);
-    assert_eq!(monkeys.len(), 4);
 }
 
 fn new_value(old: u64, op: &Operation) -> u64 {
@@ -159,14 +107,6 @@ fn do_monkey_turn(
     }
 }
 
-#[cfg(test)]
-#[test]
-fn test_monkey_turn() {
-    let mut monkeys = parse_monkeys(EXAMPLE);
-    do_monkey_turn(0, &mut monkeys, &mut HashMap::new(), false);
-    println!("{:?}", monkeys[0])
-}
-
 fn do_monkey_round(monkeys: &mut Vec<Monkey>, counter: &mut HashMap<usize, usize>, modulo: bool) {
     for monkey_id in 0..monkeys.len() {
         do_monkey_turn(monkey_id, monkeys, counter, modulo);
@@ -184,13 +124,6 @@ fn monkey_game(input: &str, rounds: usize, modulo: bool) -> usize {
     counts[counts.len() - 1] * counts[counts.len() - 2]
 }
 
-#[cfg(test)]
-#[test]
-fn test_monkey_game() {
-    let monkey_business = monkey_game(EXAMPLE, 20, false);
-    assert_eq!(monkey_business, 10605);
-}
-
 fn main() {
     let lines: Vec<String> = stdin().lines().filter_map(|line| line.ok()).collect();
     let inp = lines.join("\n");
@@ -198,4 +131,70 @@ fn main() {
     println!("Part 1: {}", monkey_business);
     let monkey_business_2 = monkey_game(inp.as_str(), 10000, true);
     println!("Part 2: {}", monkey_business_2);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const EXAMPLE: &str = "Monkey 0:
+  Starting items: 79, 98
+  Operation: new = old * 19
+  Test: divisible by 23
+    If true: throw to monkey 2
+    If false: throw to monkey 3
+
+Monkey 1:
+  Starting items: 54, 65, 75, 74
+  Operation: new = old + 6
+  Test: divisible by 19
+    If true: throw to monkey 2
+    If false: throw to monkey 0
+
+Monkey 2:
+  Starting items: 79, 60, 97
+  Operation: new = old * old
+  Test: divisible by 13
+    If true: throw to monkey 1
+    If false: throw to monkey 3
+
+Monkey 3:
+  Starting items: 74
+  Operation: new = old + 3
+  Test: divisible by 17
+    If true: throw to monkey 0
+    If false: throw to monkey 1
+";
+
+    #[test]
+    fn test_parse_monkey_block() {
+        let input = EXAMPLE.split("\n\n").next().unwrap();
+        let maybe_monkey = parse_monkey_block(input);
+        assert!(maybe_monkey.is_some());
+        let monkey = maybe_monkey.unwrap();
+        assert_eq!(monkey.id, 0);
+        assert_eq!(monkey.items, vec![79, 98]);
+        assert_eq!(monkey.op, Operation::Mul(19));
+        assert_eq!(monkey.divides_by, 23);
+        assert_eq!(monkey.pos_monkey, 2);
+        assert_eq!(monkey.neg_monkey, 3);
+    }
+
+    #[test]
+    fn test_parse_monkeys() {
+        let monkeys = parse_monkeys(EXAMPLE);
+        assert_eq!(monkeys.len(), 4);
+    }
+
+    #[test]
+    fn test_monkey_turn() {
+        let mut monkeys = parse_monkeys(EXAMPLE);
+        do_monkey_turn(0, &mut monkeys, &mut HashMap::new(), false);
+        println!("{:?}", monkeys[0])
+    }
+
+    #[test]
+    fn test_monkey_game() {
+        let monkey_business = monkey_game(EXAMPLE, 20, false);
+        assert_eq!(monkey_business, 10605);
+    }
 }

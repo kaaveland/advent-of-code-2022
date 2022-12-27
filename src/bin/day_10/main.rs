@@ -1,12 +1,106 @@
 use std::io::stdin;
 
+#[derive(Debug, PartialEq)]
+pub enum Instruction {
+    Add(i32, usize),
+    Noop(),
+}
+
+fn parse_instruction(instr: &str) -> Instruction {
+    let mut parts = instr.split(' ');
+    let first = parts.next().expect("Empty instruction");
+    match first {
+        "noop" => Instruction::Noop(),
+        "addx" => Instruction::Add(
+            parts
+                .next()
+                .and_then(|arg| arg.parse().ok())
+                .expect("Missing operand"),
+            2,
+        ),
+        _ => panic!("Wrong instruction: {}", first),
+    }
+}
+
+fn parse_instructions<'a, I: Iterator<Item = &'a str> + 'a>(it: I) -> Program<'a> {
+    let out = it.filter(|l: &&str| !l.is_empty()).map(parse_instruction);
+    Program {
+        source: Box::new(out),
+        register: 1,
+        op: None,
+        started: false,
+    }
+}
+
+struct Program<'a> {
+    source: Box<dyn Iterator<Item = Instruction> + 'a>,
+    register: i32,
+    op: Option<Instruction>,
+    started: bool,
+}
+
+impl Iterator for Program<'_> {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.started && self.op.is_none() {
+            None
+        } else {
+            self.started = true;
+            match self.op {
+                None | Some(Instruction::Noop()) => {
+                    self.op = self.source.next();
+                    Some(self.register)
+                }
+                Some(Instruction::Add(count, cycles_remaining)) => {
+                    if cycles_remaining == 1 {
+                        self.op = self.source.next();
+                        self.register += count;
+                    } else {
+                        self.op = Some(Instruction::Add(count, cycles_remaining - 1));
+                    }
+                    Some(self.register)
+                }
+            }
+        }
+    }
+}
+
+fn main() {
+    let code_lines: Vec<String> = stdin()
+        .lines()
+        .map(|line| line.expect("IO Error"))
+        .collect();
+    let code = code_lines.join("\n");
+    let prog = parse_instructions(code.as_str().lines());
+    let cycles_read = vec![20, 60, 100, 140, 180, 220];
+    let mut sum = 0;
+    let mut display: Vec<&str> = Vec::new();
+
+    for (index, register) in prog.enumerate() {
+        let cycle: i32 = (index + 1) as i32;
+        if cycles_read.contains(&cycle) {
+            sum += cycle * register;
+        }
+        let visible: bool = ((display.len() as i32) - register).abs() <= 1;
+        display.push(if visible { "#" } else { " " });
+        if display.len() == 40 {
+            println!("{}", display.join(""));
+            display.clear();
+        }
+    }
+
+    println!("signal strength: {}", sum);
+}
+
 #[cfg(test)]
-const SMALL_EXAMPLE: &str = "noop
+mod tests {
+    use super::*;
+    const SMALL_EXAMPLE: &str = "noop
 addx 3
 addx -5
 ";
-#[cfg(test)]
-const LARGE_EXAMPLE: &str = "addx 15
+    const LARGE_EXAMPLE: &str = "addx 15
 addx -11
 addx 6
 addx -3
@@ -154,141 +248,47 @@ noop
 noop
 ";
 
-#[derive(Debug, PartialEq)]
-pub enum Instruction {
-    Add(i32, usize),
-    Noop(),
-}
-
-fn parse_instruction(instr: &str) -> Instruction {
-    let mut parts = instr.split(' ');
-    let first = parts.next().expect("Empty instruction");
-    match first {
-        "noop" => Instruction::Noop(),
-        "addx" => Instruction::Add(
-            parts
-                .next()
-                .and_then(|arg| arg.parse().ok())
-                .expect("Missing operand"),
-            2,
-        ),
-        _ => panic!("Wrong instruction: {}", first),
+    #[cfg(test)]
+    #[test]
+    fn test_small_example() {
+        let mut prog = parse_instructions(SMALL_EXAMPLE.lines());
+        assert_eq!(prog.next(), Some(1));
+        assert_eq!(prog.next(), Some(1));
+        assert_eq!(prog.next(), Some(1));
+        assert_eq!(prog.next(), Some(4));
+        assert_eq!(prog.next(), Some(4));
+        assert_eq!(prog.next(), Some(-1));
+        assert_eq!(prog.next(), None);
     }
-}
 
-#[cfg(test)]
-#[test]
-fn test_parse_program() {
-    let _lines: Vec<Instruction> = SMALL_EXAMPLE
-        .lines()
-        .filter(|l| !l.is_empty())
-        .map(parse_instruction)
-        .collect();
-}
+    #[test]
+    fn test_large_example() {
+        let prog = parse_instructions(LARGE_EXAMPLE.lines());
+        let cycles_read = vec![20, 60, 100, 140, 180, 220];
+        let mut sum = 0;
 
-fn parse_instructions<'a, I: Iterator<Item = &'a str> + 'a>(it: I) -> Program<'a> {
-    let out = it.filter(|l: &&str| !l.is_empty()).map(parse_instruction);
-    Program {
-        source: Box::new(out),
-        register: 1,
-        op: None,
-        started: false,
-    }
-}
-
-struct Program<'a> {
-    source: Box<dyn Iterator<Item = Instruction> + 'a>,
-    register: i32,
-    op: Option<Instruction>,
-    started: bool,
-}
-
-impl Iterator for Program<'_> {
-    type Item = i32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.started && self.op.is_none() {
-            None
-        } else {
-            self.started = true;
-            match self.op {
-                None | Some(Instruction::Noop()) => {
-                    self.op = self.source.next();
-                    Some(self.register)
-                }
-                Some(Instruction::Add(count, cycles_remaining)) => {
-                    if cycles_remaining == 1 {
-                        self.op = self.source.next();
-                        self.register += count;
-                    } else {
-                        self.op = Some(Instruction::Add(count, cycles_remaining - 1));
-                    }
-                    Some(self.register)
-                }
+        for (index, register) in prog.enumerate() {
+            let cycle: i32 = (index + 1) as i32;
+            if cycles_read.contains(&cycle) {
+                println!(
+                    "cycle: {} register: {} signal: {}",
+                    cycle,
+                    register,
+                    cycle * register
+                );
+                sum += cycle * register;
             }
         }
-    }
-}
 
-#[cfg(test)]
-#[test]
-fn test_small_example() {
-    let mut prog = parse_instructions(SMALL_EXAMPLE.lines());
-    assert_eq!(prog.next(), Some(1));
-    assert_eq!(prog.next(), Some(1));
-    assert_eq!(prog.next(), Some(1));
-    assert_eq!(prog.next(), Some(4));
-    assert_eq!(prog.next(), Some(4));
-    assert_eq!(prog.next(), Some(-1));
-    assert_eq!(prog.next(), None);
-}
-
-#[cfg(test)]
-#[test]
-fn test_large_example() {
-    let prog = parse_instructions(LARGE_EXAMPLE.lines());
-    let cycles_read = vec![20, 60, 100, 140, 180, 220];
-    let mut sum = 0;
-
-    for (index, register) in prog.enumerate() {
-        let cycle: i32 = (index + 1) as i32;
-        if cycles_read.contains(&cycle) {
-            println!(
-                "cycle: {} register: {} signal: {}",
-                cycle,
-                register,
-                cycle * register
-            );
-            sum += cycle * register;
-        }
+        assert_eq!(sum, 13140);
     }
 
-    assert_eq!(sum, 13140);
-}
-
-fn main() {
-    let code_lines: Vec<String> = stdin()
-        .lines()
-        .map(|line| line.expect("IO Error"))
-        .collect();
-    let code = code_lines.join("\n");
-    let prog = parse_instructions(code.as_str().lines());
-    let cycles_read = vec![20, 60, 100, 140, 180, 220];
-    let mut sum = 0;
-    let mut display: Vec<&str> = Vec::new();
-
-    for (index, register) in prog.enumerate() {
-        let cycle: i32 = (index + 1) as i32;
-        if cycles_read.contains(&cycle) {
-            sum += cycle * register;
-        }
-        let visible: bool = ((display.len() as i32) - register).abs() <= 1;
-        display.push(if visible { "#" } else { " " });
-        if display.len() == 40 {
-            println!("{}", display.join(""));
-            display.clear();
-        }
+    #[test]
+    fn test_parse_program() {
+        let _lines: Vec<Instruction> = SMALL_EXAMPLE
+            .lines()
+            .filter(|l| !l.is_empty())
+            .map(parse_instruction)
+            .collect();
     }
-
-    println!("signal strength: {}", sum);
 }
