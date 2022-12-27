@@ -1,7 +1,6 @@
 use anyhow::Result;
 use aoc::io::read_stdin;
 
-const SNAFU_VALUES: [i64; 5] = [2, 1, 0, -1, -2];
 const SNAFU_STR: [char; 5] = ['0', '1', '2', '=', '-'];
 
 fn snafu_to_dec(snafu: &str) -> i64 {

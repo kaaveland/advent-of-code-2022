@@ -63,6 +63,7 @@ fn exposed_surface(droplet: &HashSet<(i32, i32, i32)>) -> usize {
 
         for next in face_sides(&current) {
             if !visited.contains(&next)
+                && !queue.contains(&next)
                 && !droplet.contains(&next)
                 && next.0 >= xmin
                 && next.0 <= xmax

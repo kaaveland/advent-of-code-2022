@@ -45,10 +45,7 @@ pub enum Step {
     Forward(u32),
 }
 type Direction = i64;
-const NORTH: Direction = 3;
 const EAST: Direction = 0;
-const SOUTH: Direction = 1;
-const WEST: Direction = 2;
 type CoordSize = i64;
 type Heading = (CoordSize, CoordSize);
 const HEADINGS: [Heading; 4] = [(1, 0), (0, 1), (-1, 0), (0, -1)];
