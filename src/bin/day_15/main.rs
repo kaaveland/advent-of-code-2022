@@ -163,11 +163,7 @@ fn find_distress_beacon(map: &Map) -> Option<Location> {
         }
     }
 
-    intersects = intersects
-        .iter()
-        .filter(|&Location(x, y)| *x >= xmin && *x <= xmax && *y >= ymin && *y <= ymax)
-        .cloned()
-        .collect();
+    intersects.retain(|&Location(x, y)| x >= xmin && x <= xmax && y >= ymin && y <= ymax);
 
     for Input(sensor, beacon) in map.iter() {
         let dist = manhattan_dist(sensor, beacon);
