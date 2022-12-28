@@ -151,11 +151,7 @@ fn search(problem: &Problem, max_cost: u32) -> u32 {
             }
         }
 
-        stack = stack
-            .iter()
-            .cloned()
-            .filter(|state| best < state.released + (max_cost - state.cost) * max_flow)
-            .collect();
+        stack.retain(|state| best < state.released + (max_cost - state.cost) * max_flow);
     }
 
     best
