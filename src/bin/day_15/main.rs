@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
+use std::cmp::{max, min};
 use std::collections::HashSet;
 use std::io;
 use std::io::Read;
+use std::ops::RangeInclusive;
 use std::time::Instant;
 
 use regex::Regex;
@@ -65,7 +67,7 @@ fn parse_lines<T: AsRef<str>>(input: T) -> Result<Map> {
 }
 
 fn solve_problem_one(inputs: &Map, row: i32) -> usize {
-    let mut points = HashSet::new();
+    let mut ranges = vec![];
     for Input(sensor, beacon) in inputs.iter() {
         let distance = manhattan_dist(sensor, beacon);
         let remaining = distance - (sensor.y() - row).abs();
@@ -74,20 +76,40 @@ fn solve_problem_one(inputs: &Map, row: i32) -> usize {
         if remaining <= 0 {
             continue;
         }
-        for i in 0..=remaining {
-            points.insert(Location(intersect_x - i, row));
-            points.insert(Location(intersect_x + i, row));
+        let x1 = intersect_x - remaining;
+        let x2 = intersect_x + remaining;
+        ranges.push(x1..=x2);
+    }
+    ranges.sort_by_key(|range| *range.start());
+    let mut it = ranges.iter().cloned();
+    let mut curr = it.next().unwrap();
+    let mut range_set = vec![];
+
+    for next in it {
+        if curr.end() + 1 >= *next.start() {
+            curr = RangeInclusive::new(*curr.start(), *next.end());
+        } else {
+            range_set.push(curr);
+            curr = next;
         }
     }
-    for Input(sensor, beacon) in inputs.iter() {
-        points.remove(beacon);
-        points.remove(sensor);
-    }
-    points.len()
+    range_set.push(curr);
+    let total_range = range_set.iter().fold((0, 0), |acc, range| {
+        (min(acc.0, *range.start()), max(acc.1, *range.end()))
+    });
+    (total_range.1 - total_range.0) as usize
+}
+
+// Find intersection point of y = -x + b_neg and y = x + b_pos
+fn intersect_lines(b_neg: i32, b_pos: i32) -> (i32, i32) {
+    // Add equations => 2 y = b_neg + b_pos
+    let y = (b_neg + b_pos) / 2;
+    // Solve either one for x
+    let x = y - b_pos;
+    (x, y)
 }
 
 fn find_distress_beacon(map: &Map) -> Option<Location> {
-    let mut candidate_locations = HashSet::new();
     let (xmin, xmax) = map.iter().fold((0, 0), |(xmin, xmax), input| match input {
         Input(Location(x, _), _) if *x < xmin => (*x, xmax),
         Input(Location(x, _), _) if *x > xmax => (xmin, *x),
@@ -99,40 +121,49 @@ fn find_distress_beacon(map: &Map) -> Option<Location> {
         _ => (ymin, ymax),
     });
 
-    let xdist = xmax - xmin;
-    let xmin = xmin + xdist / 5;
-    let xmax = xmax - xdist / 5;
-    let ydist = ymax - ymin;
-    let ymin = ymin + ydist / 5;
-    let ymax = ymax - ydist / 5;
+    // The distress beacon is in some point that is 1 outside of a sensor range
+    // and where there is an intersection between "circles" just outside sensor range
+    // Solve the y = ax + b equations and find the intersects to narrow the search space
+    let mut pos_slope_intersects = vec![];
+    let mut neg_slope_intersects = vec![];
 
-    // Must be 1 unit outside sensor/beacon distance
-    // Generate those possible places
     for Input(sensor, beacon) in map.iter() {
         let dist = manhattan_dist(sensor, beacon);
         let outside = dist + 1;
 
-        for i in 0..=outside {
-            let nw = Location(sensor.x() - i, sensor.y() + (outside - i));
-            if nw.y() >= ymin && nw.y() <= ymax && nw.x() >= xmin && nw.x() <= xmax {
-                candidate_locations.insert(nw);
-            }
-            let ne = Location(sensor.x() + i, sensor.y() + (outside - i));
-            if ne.y() >= ymin && ne.y() <= ymax && ne.x() >= xmin && ne.x() <= xmax {
-                candidate_locations.insert(ne);
-            }
-            let sw = Location(sensor.x() - i, sensor.y() - (outside - i));
-            if sw.y() >= ymin && sw.y() <= ymax && sw.x() >= xmin && sw.x() <= xmax {
-                candidate_locations.insert(sw);
-            }
-            let se = Location(sensor.x() + i, sensor.y() - (outside - i));
-            if se.y() >= ymin && se.y() <= ymax && se.x() >= xmin && se.x() <= xmax {
-                candidate_locations.insert(se);
-            }
+        // 4 lines of form: y = ax + b, y is fixed, it's sensor y
+        // x can be -1 or 1, find b
+        let y = sensor.1;
+        let x = sensor.0;
+        let west = x - outside;
+        let east = x + outside;
+        pos_slope_intersects.push(
+            // Originating in west with positive slope y = ax + b, so b = y - a when x is 1, nw
+            y - west,
+        );
+        pos_slope_intersects.push(
+            // Originating in east with positive slope y = ax + b, so b = y - a when x is 1, se
+            y - east,
+        );
+        neg_slope_intersects.push(
+            // Originating in west with negative slope y = ax + b so b = y + a when x is -1, sw
+            y + west,
+        );
+        neg_slope_intersects.push(
+            // Originating in east with negative slope y = ax + b so b = y + a when x is -1, ne
+            y + east,
+        );
+    }
+
+    let mut intersects = HashSet::new();
+    for neg_slope in neg_slope_intersects.iter() {
+        for pos_slope in pos_slope_intersects.iter() {
+            let point = intersect_lines(*neg_slope, *pos_slope);
+            intersects.insert(Location(point.0, point.1));
         }
     }
 
-    candidate_locations = candidate_locations
+    intersects = intersects
         .iter()
         .filter(|&Location(x, y)| *x >= xmin && *x <= xmax && *y >= ymin && *y <= ymax)
         .cloned()
@@ -140,15 +171,15 @@ fn find_distress_beacon(map: &Map) -> Option<Location> {
 
     for Input(sensor, beacon) in map.iter() {
         let dist = manhattan_dist(sensor, beacon);
-        candidate_locations.retain(|loc| manhattan_dist(sensor, loc) > dist);
+        intersects.retain(|loc| manhattan_dist(sensor, loc) > dist);
     }
 
-    println!("Found {} after filter", candidate_locations.len());
+    println!("Found {} after filter", intersects.len());
 
-    if candidate_locations.len() != 1 {
+    if intersects.len() != 1 {
         None
     } else {
-        candidate_locations.iter().next().cloned()
+        intersects.iter().next().cloned()
     }
 }
 

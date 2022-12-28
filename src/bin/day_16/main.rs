@@ -206,9 +206,7 @@ fn search_2(problem: &Problem) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use itertools::Itertools;
-
-    use crate::{parse, search};
+    use super::*;
 
     const EXAMPLE: &str = "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
 Valve BB has flow rate=13; tunnels lead to valves CC, AA
@@ -248,7 +246,7 @@ Valve JJ has flow rate=21; tunnel leads to valve II
     #[test]
     fn test_search_2() {
         let problem = parse(EXAMPLE).unwrap();
-        let solution = super::search_2(&problem);
+        let solution = search_2(&problem);
         assert_eq!(solution, 1707);
     }
 }
