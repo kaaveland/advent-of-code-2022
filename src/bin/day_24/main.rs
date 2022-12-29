@@ -1,9 +1,10 @@
 use anyhow::{anyhow, Context, Result};
 use aoc::io::read_stdin;
 use aoc::point2d::Point2d;
+use fxhash::FxHashSet as HashSet;
 use itertools::Itertools;
 use std::cmp::max;
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
 pub enum Direction {

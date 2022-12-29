@@ -1,9 +1,8 @@
 use anyhow::Result;
 use aoc::io::read_stdin;
 use aoc::point2d::{Point2d, Rect};
+use fxhash::{FxHashMap as HashMap, FxHashSet as HashSet};
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
-
 type Elf = Point2d<i64>;
 type Board = HashSet<Elf>;
 
@@ -77,37 +76,42 @@ fn parse_board(input: &str) -> Board {
 }
 
 fn next_board(board: &Board, current_dir: &Direction) -> Board {
-    let mut claims: HashMap<_, Vec<_>> = HashMap::new();
-    let mut next_board: Board = Board::new();
+    let mut claims_vec: Vec<_> = Vec::with_capacity(board.len());
+    let mut claim_counter: HashMap<_, i32> = HashMap::default();
+    let mut next_board: Board = Board::default();
 
     for elf in board {
         if board
             .intersection(&elf.around().into_iter().collect())
-            .count()
-            == 0
+            .next()
+            .is_some()
         {
-            next_board.insert(*elf);
-        } else {
             let mut claimed = false;
             for dir in current_dir.prioritized() {
                 if board.intersection(&dir.of(elf)).count() == 0 {
                     let claim = dir.adjust(elf);
-                    claims.entry(claim).or_default().push(elf);
+                    claims_vec.push(claim);
+                    *claim_counter.entry(claim).or_default() += 1;
                     claimed = true;
                     break;
                 }
             }
             if !claimed {
-                next_board.insert(*elf);
+                claims_vec.push(*elf);
             }
+        } else {
+            claims_vec.push(*elf);
         }
     }
 
-    for (claim, claimed_by) in claims {
-        if claimed_by.len() == 1 {
+    assert_eq!(claims_vec.len(), board.len());
+
+    for (claim, elf) in claims_vec.into_iter().zip(board.iter()) {
+        if *claim_counter.get(&claim).unwrap_or(&0) <= 1 {
+            // Grant it
             next_board.insert(claim);
         } else {
-            next_board.extend(claimed_by);
+            next_board.insert(*elf);
         }
     }
 
